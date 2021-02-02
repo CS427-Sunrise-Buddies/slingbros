@@ -4,6 +4,9 @@
 #include "common.hpp"
 #include "salmon.hpp"
 
+#include "Scene.hpp"
+#include "Entity.hpp"
+
 // stlib
 #include <vector>
 #include <random>
@@ -17,6 +20,9 @@
 class WorldSystem
 {
 public:
+	// Initialize the main scene (Scenes are essentially just entity containers)
+	static ECS_ENTT::Scene* GameScene;
+
 	// Creates a window
 	WorldSystem(ivec2 window_size_px);
 
@@ -33,10 +39,7 @@ public:
 	void handle_collisions();
 
 	// Handle fish movement
-	void HandlePlayerFishMovement(float deltaTime);
-
-	// Renders our scene
-	void draw();
+	void HandlePlayerMovement(float deltaTime);
 
 	// Should the game be over ?
 	bool is_over() const;
@@ -60,8 +63,6 @@ private:
 
 	// Game state
 	float current_speed;
-	float next_turtle_spawn;
-	float next_fish_spawn;
 	ECS::Entity player_salmon;
 	
 	// music references

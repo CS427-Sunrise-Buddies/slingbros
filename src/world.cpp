@@ -2,8 +2,6 @@
 #include "world.hpp"
 #include "physics.hpp"
 #include "debug.hpp"
-#include "turtle.hpp"
-#include "fish.hpp"
 #include "pebbles.hpp"
 #include "render_components.hpp"
 
@@ -21,12 +19,13 @@ const size_t FISH_DELAY_MS = 5000;
 const float TURTLE_SPEED = 100.0f;
 const float FISH_SPEED = 200.0f;
 
+// Initialize the main scene (Scenes are essentially just entity containers)
+ECS_ENTT::Scene* WorldSystem::GameScene = nullptr;
+
 // Create the fish world
 // Note, this has a lot of OpenGL specific things, could be moved to the renderer; but it also defines the callbacks to the mouse and keyboard. That is why it is called here.
 WorldSystem::WorldSystem(ivec2 window_size_px) :
-	points(0),
-	next_turtle_spawn(0.f),
-	next_fish_spawn(0.f)
+	points(0)
 {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
@@ -68,6 +67,8 @@ WorldSystem::WorldSystem(ivec2 window_size_px) :
 	init_audio();
 	Mix_PlayMusic(background_music, -1);
 	std::cout << "Loaded music\n";
+
+	WorldSystem::GameScene = ECS_ENTT::Scene::Create();
 }
 
 WorldSystem::~WorldSystem(){
@@ -82,6 +83,9 @@ WorldSystem::~WorldSystem(){
 
 	// Destroy all created components
 	ECS::ContainerInterface::clear_all_components();
+
+	// Free memory of all of the game's scenes
+	delete(GameScene);
 
 	// Close the window
 	glfwDestroyWindow(window);
@@ -123,7 +127,7 @@ void WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	// Remove entities that leave the screen on the left side
 	// Iterate backwards to be able to remove without unterfering with the next object to visit
 	// (the containers exchange the last element with the current upon delete)
-	for (int i = static_cast<int>(registry.components.size())-1; i >= 0; --i)
+	for (int i = static_cast<int>(registry.components.size()) - 1; i >= 0; --i) 
 	{
 		auto& motion = registry.components[i];
 		if (motion.position.x + abs(motion.scale.x) < 0.f)
@@ -134,39 +138,27 @@ void WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 		}
 	}
 
-	// Spawning new turtles
-	next_turtle_spawn -= elapsed_ms * current_speed;
-	if (ECS::registry<Turtle>.components.size() <= MAX_TURTLES && next_turtle_spawn < 0.f)
+	// Testing EnTT integration is functional:
+	struct TagComponent
 	{
-		// Reset timer
-		next_turtle_spawn = (TURTLE_DELAY_MS / 2) + uniform_dist(rng) * (TURTLE_DELAY_MS / 2);
-		// Create turtle
-		ECS::Entity entity = Turtle::createTurtle({0, 0});
-		// Setting random initial position and constant velocity
-		auto& motion = ECS::registry<Motion>.get(entity);
-		motion.position = vec2(window_size_in_game_units.x + 150.f, 50.f + uniform_dist(rng) * (window_size_in_game_units.y - 100.f));
-		motion.velocity = vec2(-TURTLE_SPEED, 0.f );
-	}
+		TagComponent(const std::string& tag)
+			: Tag(tag) {}
 
-	// Spawning new fish
-	next_fish_spawn -= elapsed_ms * current_speed;
-	if (ECS::registry<Fish>.components.size() <= MAX_FISH && next_fish_spawn < 0.f)
+		std::string Tag;
+	};
+
+	// Can't do this since tiny_ecs defines Entity too
+	//auto entityTest = GameScene->CreateEntity();
+
+	// EXAMPLE of the above code block using EnTT:
+	// Use an entity view to iterate through all entities with a motion component
+	//
+	auto entityView = GameScene->m_Registry.view<Motion>();
+	for (auto entity : entityView)
 	{
-		// !!! TODO A1: Create new fish with Fish::createFish({0,0}), as for the Turtles above
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		// Reset fish timer
-		next_fish_spawn = (FISH_DELAY_MS / 2) + uniform_dist(rng) * (FISH_DELAY_MS / 2);
-		// Create a new fish 
-		ECS::Entity fishEntity = Fish::createFish({ 0, 0 });
-		// Setting random initial position and constant velocity
-		auto& motion = ECS::registry<Motion>.get(fishEntity);
-		motion.position = vec2(window_size_in_game_units.x + 150.f, 50.f + uniform_dist(rng) * (window_size_in_game_units.y - 100.f));
-		motion.velocity = vec2(-FISH_SPEED, 0.f);
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		auto& motionComponent = entityView.get<Motion>(entity);
+		if (motionComponent.position.x + abs(motionComponent.scale.x) < 0.0f)
+			GameScene->m_Registry.destroy(entity); // Might be bad, should be marked to be destroyed outside the iteration loop 
 	}
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -253,6 +245,7 @@ void WorldSystem::restart()
 // Compute collisions between entities
 void WorldSystem::handle_collisions()
 {
+	/*
 	// Loop over all collisions detected by the physics system
 	auto& registry = ECS::registry<PhysicsSystem::Collision>;
 	for (unsigned int i=0; i< registry.components.size(); i++)
@@ -264,67 +257,20 @@ void WorldSystem::handle_collisions()
 		// For now, we are only interested in collisions that involve the salmon
 		if (ECS::registry<Salmon>.has(entity))
 		{
-			// Checking Salmon - Turtle collisions
-			if (ECS::registry<Turtle>.has(entity_other))
-			{
-				// initiate death unless already dying
-				if (!ECS::registry<DeathTimer>.has(entity))
-				{
-					// Scream, reset timer, and make the salmon sink
-					ECS::registry<DeathTimer>.emplace(entity);
-					Mix_PlayChannel(-1, salmon_dead_sound, 0);
+			// Handled collisions here
 
-					// !!! TODO A1: change the salmon motion to float down up-side down
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-					auto& salmonMotionComponent = ECS::registry<Motion>.get(player_salmon);
-					salmonMotionComponent.angle = -PI;
-					salmonMotionComponent.velocity = glm::vec2{ 0.0f, 25.0f };
-
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-					// !!! TODO A1: change the salmon color
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-					auto& salmonTextureMesh = *ECS::registry<ShadedMeshRef>.get(entity).reference_to_cache;
-					salmonTextureMesh.texture.color = glm::vec3{ 0.7f, 0.0f, 0.0f };
-
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-					// Added based on interpretation of game
-					// Shouldn't the points be reset when the salmon dies?
-					points = 0;
-				}
-			}
+			// EXAMPLE 
 			// Checking Salmon - Fish collisions
-			else if (ECS::registry<Fish>.has(entity_other))
-			{
-				if (!ECS::registry<DeathTimer>.has(entity))
-				{
-					// chew, count points, and set the LightUp timer 
-					ECS::ContainerInterface::remove_all_components_of(entity_other);
-					Mix_PlayChannel(-1, salmon_eat_sound, 0);
-					++points;
-
-					// !!! TODO A1: create a new struct called LightUp in render_components.hpp and add an instance to the salmon entity
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-					ECS::registry<LightUp>.emplace(entity);
-
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-					////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				}
-			}
+			//if (ECS::registry<Fish>.has(entity_other))
+			//{
+				
+			//}
 		}
 	}
 
 	// Remove all collisions from this simulation step
 	ECS::registry<PhysicsSystem::Collision>.clear();
+	*/
 }
 
 // Should the game be over ?
@@ -343,7 +289,7 @@ bool WorldSystem::IsKeyPressed(const int glfwKeycode)
 // TODO A1: check out https://www.glfw.org/docs/3.3/input_guide.html
 void WorldSystem::on_key(int key, int, int action, int mod)
 {
-	// Note: Moved the player fish movement handling to WorldSystem::HandlePlayerFishMovement()
+	// Note: Moved the player Salmon movement handling to WorldSystem::HandlePlayerMovement()
 
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R)
@@ -397,7 +343,7 @@ void WorldSystem::on_mouse_move(vec2 mouse_pos)
 	}
 }
 
-void WorldSystem::HandlePlayerFishMovement(float deltaTime)
+void WorldSystem::HandlePlayerMovement(float deltaTime)
 {
 	// Move salmon if alive
 	if (!ECS::registry<DeathTimer>.has(player_salmon))
@@ -418,23 +364,23 @@ void WorldSystem::HandlePlayerFishMovement(float deltaTime)
 		float momentumSlowdownFactor = 0.4f; // lower for more fish momentum
 
 		// WASD keys
-		//if (IsKeyPressed(GLFW_KEY_W))
-		//	if (salmonMotionComponent.velocity.y > -playerFishMaxSpeed)
-		//		salmonMotionComponent.velocity.y -= playerFishAcceleration * deltaTime / 100.0f;
-		//if (IsKeyPressed(GLFW_KEY_S))
-		//	if (salmonMotionComponent.velocity.y < playerFishMaxSpeed)
-		//		salmonMotionComponent.velocity.y += playerFishAcceleration * deltaTime / 100.0f;
-		//if (IsKeyPressed(GLFW_KEY_A))
-		//	if (salmonMotionComponent.velocity.x > -playerFishMaxSpeed)
-		//		salmonMotionComponent.velocity.x -= playerFishAcceleration * deltaTime / 100.0f;
-		//if (IsKeyPressed(GLFW_KEY_D))
-		//	if (salmonMotionComponent.velocity.x < playerFishMaxSpeed)
-		//		salmonMotionComponent.velocity.x += playerFishAcceleration * deltaTime / 100.0f;
-		//// Key raised handling
-		//if (!IsKeyPressed(GLFW_KEY_W) && !IsKeyPressed(GLFW_KEY_S))
-		//	salmonMotionComponent.velocity.y *= min((deltaTime / momentumSlowdownFactor), 0.999f);
-		//if (!IsKeyPressed(GLFW_KEY_A) && !IsKeyPressed(GLFW_KEY_D))
-		//	salmonMotionComponent.velocity.x *= min((deltaTime / momentumSlowdownFactor), 0.999f);
+		if (IsKeyPressed(GLFW_KEY_W))
+			if (salmonMotionComponent.velocity.y > -playerFishMaxSpeed)
+				salmonMotionComponent.velocity.y -= playerFishAcceleration * deltaTime / 100.0f;
+		if (IsKeyPressed(GLFW_KEY_S))
+			if (salmonMotionComponent.velocity.y < playerFishMaxSpeed)
+				salmonMotionComponent.velocity.y += playerFishAcceleration * deltaTime / 100.0f;
+		if (IsKeyPressed(GLFW_KEY_A))
+			if (salmonMotionComponent.velocity.x > -playerFishMaxSpeed)
+				salmonMotionComponent.velocity.x -= playerFishAcceleration * deltaTime / 100.0f;
+		if (IsKeyPressed(GLFW_KEY_D))
+			if (salmonMotionComponent.velocity.x < playerFishMaxSpeed)
+				salmonMotionComponent.velocity.x += playerFishAcceleration * deltaTime / 100.0f;
+		// Key raised handling
+		if (!IsKeyPressed(GLFW_KEY_W) && !IsKeyPressed(GLFW_KEY_S))
+			salmonMotionComponent.velocity.y *= min((deltaTime / momentumSlowdownFactor), 0.999f);
+		if (!IsKeyPressed(GLFW_KEY_A) && !IsKeyPressed(GLFW_KEY_D))
+			salmonMotionComponent.velocity.x *= min((deltaTime / momentumSlowdownFactor), 0.999f);
 
 		// Arrow keys
 		if (IsKeyPressed(GLFW_KEY_UP))

@@ -28,7 +28,7 @@ ECS::Entity Salmon::createSalmon(vec2 position)
 	motion.scale = resource.mesh.original_size * 150.f;
 	motion.scale.x *= -1; // point front to the right
 
-	// Create and (empty) Salmon component to be able to refer to all turtles
+	// Create and (empty) Salmon component to be able to refer to all Salmons
 	ECS::registry<Salmon>.emplace(entity);
 
 	return entity;

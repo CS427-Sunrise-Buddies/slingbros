@@ -4,34 +4,38 @@
 
 // Credit for the general Entity/Scene implementation structure used here goes to The Cherno, see reference video here: https://www.youtube.com/watch?v=D4hz0wEB978&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT&index=77
 
-class Entity;
+namespace ECS_ENTT {
 
-// Class to be used to manage Entities in a structured way. Every Scene object will have its own registry that contains all of the Entities in the Scene.
-class Scene
-{
-public:
-	Scene() = default;
-	~Scene() = default;
+	class Entity;
 
-	static std::shared_ptr<Scene> Create() { return std::make_shared<Scene>(); }
+	// Class to be used to manage Entities in a structured way. Every Scene object will have its own registry that contains all of the Entities in the Scene.
+	class Scene
+	{
+	public:
+		Scene() = default;
+		~Scene() = default;
 
-	Entity CreateEntity(const std::string& name = std::string());
-	void DestroyEntity(Entity entity);
+		static Scene* Create() { return new Scene(); }
 
-	void OnUpdate(float deltaTime);
+		Entity CreateEntity(const std::string& name = std::string());
+		void DestroyEntity(Entity entity);
 
-private:
-	template<typename T>
-	void OnComponentAdded(Entity entity, T& component);
+		void OnUpdate(float deltaTime);
 
-private:
-	friend class Entity;
+	public:
+		// Registry to contain the component data and entity IDs
+		entt::registry m_Registry;
 
-	// Registry to contain the component data and entity IDs
-	entt::registry m_Registry;
+	private:
+		template<typename T>
+		void OnComponentAdded(Entity entity, T& component);
 
-	// TODO: these will need to be set properly whenever the game window is created/resized
-	uint32_t m_ViewportWidth = 0;
-	uint32_t m_ViewportHeight = 0;
-};
+	private:
+		friend class Entity;
 
+		// TODO: these will need to be set properly whenever the game window is created/resized
+		uint32_t m_ViewportWidth = 0;
+		uint32_t m_ViewportHeight = 0;
+	};
+
+}
