@@ -4,6 +4,7 @@
 
 #include "common.hpp"
 #include "tiny_ecs.hpp"
+#include "Entity.hpp"
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // DON'T WORRY ABOUT THIS CLASS UNTIL ASSIGNMENT 3

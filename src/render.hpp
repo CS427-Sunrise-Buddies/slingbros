@@ -2,6 +2,7 @@
 
 #include "common.hpp"
 #include "tiny_ecs.hpp"
+#include "Entity.hpp"
 #include "render_components.hpp"
 
 struct InstancedMesh;

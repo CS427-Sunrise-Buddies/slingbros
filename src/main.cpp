@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "world.hpp"
 #include "tiny_ecs.hpp"
+#include "Entity.hpp"
 #include "render.hpp"
 #include "physics.hpp"
 #include "ai.hpp"
