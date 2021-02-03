@@ -1,14 +1,20 @@
 // internal
 #include "render.hpp"
 #include "render_components.hpp"
-#include "tiny_ecs.hpp"
+//#include "tiny_ecs.hpp"
+
+#include "world.hpp"
 
 #include <iostream>
 
-void RenderSystem::drawTexturedMesh(ECS::Entity entity, const mat3& projection)
+void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& projection)
 {
-	auto& motion = ECS::registry<Motion>.get(entity);
-	auto& texmesh = *ECS::registry<ShadedMeshRef>.get(entity).reference_to_cache;
+	//auto& motion = ECS::registry<Motion>.get(entity);
+	//auto& texmesh = *ECS::registry<ShadedMeshRef>.get(entity).reference_to_cache;
+	// tiny_ecs way above, EnTT way below:
+	auto& motion = entity.GetComponent<Motion>();
+	auto& texmesh = *entity.GetComponent<ShadedMeshRef>().reference_to_cache;
+
 	// Transformation code, see Rendering and Transformation in the template specification for more info
 	// Incrementally updates transformation matrix, thus ORDER IS IMPORTANT
 	Transform transform;
@@ -69,12 +75,14 @@ void RenderSystem::drawTexturedMesh(ECS::Entity entity, const mat3& projection)
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		if (ECS::registry<LightUp>.has(entity))
+		//if (ECS::registry<LightUp>.has(entity))
+		if (entity.HasComponent<LightUp>())
 		{
 			GLint light_up_uloc = glGetUniformLocation(texmesh.effect.program, "light_up");
 			// !!! TODO A1: set the light_up shader variable using glUniform1i
 			// (void)light_up_uloc; // placeholder to silence unused warning until implemented
-			auto& lightUpComponent = ECS::registry<LightUp>.get(entity);
+			//auto& lightUpComponent = ECS::registry<LightUp>.get(entity);
+			auto& lightUpComponent = entity.GetComponent<LightUp>();
 			glUniform1i(light_up_uloc, (GLint)lightUpComponent.isLit);
 		}
 		else
@@ -148,7 +156,8 @@ void RenderSystem::drawToScreen()
 	GLuint time_uloc       = glGetUniformLocation(screen_sprite.effect.program, "time");
 	GLuint dead_timer_uloc = glGetUniformLocation(screen_sprite.effect.program, "darken_screen_factor");
 	glUniform1f(time_uloc, static_cast<float>(glfwGetTime() * 10.0f));
-	auto& screen = ECS::registry<ScreenState>.get(screen_state_entity);
+	//auto& screen = ECS::registry<ScreenState>.get(screen_state_entity);
+	auto& screen = screen_state_entity.GetComponent<ScreenState>();
 	glUniform1f(dead_timer_uloc, screen.darken_screen_factor);
 	gl_has_errors();
 
@@ -204,9 +213,12 @@ void RenderSystem::draw(vec2 window_size_in_game_units)
 	mat3 projection_2D{ { sx, 0.f, 0.f },{ 0.f, sy, 0.f },{ tx, ty, 1.f } };
 
 	// Draw all textured meshes that have a position and size component
-	for (ECS::Entity entity : ECS::registry<ShadedMeshRef>.entities)
+	// TODO we should probably be passing in a specific scene to this function as a parameter and then draw that scene
+	ECS_ENTT::Scene* scene = WorldSystem::GameScene;
+	for (auto entityID : scene->m_Registry.view<ShadedMeshRef>())
 	{
-		if (!ECS::registry<Motion>.has(entity))
+		ECS_ENTT::Entity entity{ entityID, scene };
+		if (!entity.HasComponent<Motion>())
 			continue;
 		// Note, its not very efficient to access elements indirectly via the entity albeit iterating through all Sprites in sequence
 		drawTexturedMesh(entity, projection_2D);

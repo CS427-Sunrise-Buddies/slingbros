@@ -2,7 +2,7 @@
 #include "world.hpp"
 #include "physics.hpp"
 #include "debug.hpp"
-#include "pebbles.hpp"
+//#include "pebbles.hpp"
 #include "render_components.hpp"
 
 // stlib
@@ -19,7 +19,7 @@ const size_t FISH_DELAY_MS = 5000;
 const float TURTLE_SPEED = 100.0f;
 const float FISH_SPEED = 200.0f;
 
-// Initialize the main scene (Scenes are essentially just entity containers)
+// For this barebones template, this is just the main scene (Scenes are essentially just entity containers)
 ECS_ENTT::Scene* WorldSystem::GameScene = nullptr;
 
 // Create the fish world
@@ -81,8 +81,9 @@ WorldSystem::~WorldSystem(){
 		Mix_FreeChunk(salmon_eat_sound);
 	Mix_CloseAudio();
 
+	// TODO using EnTT
 	// Destroy all created components
-	ECS::ContainerInterface::clear_all_components();
+	//ECS::ContainerInterface::clear_all_components();
 
 	// Free memory of all of the game's scenes
 	delete(GameScene);
@@ -120,23 +121,24 @@ void WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	std::stringstream title_ss;
 	title_ss << "Points: " << points;
 	glfwSetWindowTitle(window, title_ss.str().c_str());
-	
+
+	// TODO using EnTT
 	// Removing out of screen entities
-	auto& registry = ECS::registry<Motion>;
+	//auto& registry = ECS::registry<Motion>;
 
 	// Remove entities that leave the screen on the left side
 	// Iterate backwards to be able to remove without unterfering with the next object to visit
 	// (the containers exchange the last element with the current upon delete)
-	for (int i = static_cast<int>(registry.components.size()) - 1; i >= 0; --i) 
-	{
-		auto& motion = registry.components[i];
-		if (motion.position.x + abs(motion.scale.x) < 0.f)
-		{
-			// Added this check to make sure the salmon does not get removed
-			if(registry.entities[i].id != player_salmon.id)
-				ECS::ContainerInterface::remove_all_components_of(registry.entities[i]);
-		}
-	}
+	//for (int i = static_cast<int>(registry.components.size()) - 1; i >= 0; --i) 
+	//{
+	//	auto& motion = registry.components[i];
+	//	if (motion.position.x + abs(motion.scale.x) < 0.f)
+	//	{
+	//		// Added this check to make sure the salmon does not get removed
+	//		if(registry.entities[i].id != player_salmon.id)
+	//			ECS::ContainerInterface::remove_all_components_of(registry.entities[i]);
+	//	}
+	//}
 
 	// Testing EnTT integration is functional:
 	struct TagComponent
@@ -153,10 +155,10 @@ void WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	// EXAMPLE of the above code block using EnTT:
 	// Use an entity view to iterate through all entities with a motion component
 	//
-	auto entityView = GameScene->m_Registry.view<Motion>();
-	for (auto entity : entityView)
+	auto motionEntitiesView = GameScene->m_Registry.view<Motion>();
+	for (auto entity : motionEntitiesView)
 	{
-		auto& motionComponent = entityView.get<Motion>(entity);
+		auto& motionComponent = motionEntitiesView.get<Motion>(entity);
 		if (motionComponent.position.x + abs(motionComponent.scale.x) < 0.0f)
 			GameScene->m_Registry.destroy(entity); // Might be bad, should be marked to be destroyed outside the iteration loop 
 	}
@@ -167,42 +169,48 @@ void WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	// Processing the salmon state
-	assert(ECS::registry<ScreenState>.components.size() <= 1);
-	auto& screen = ECS::registry<ScreenState>.components[0];
-
-	for (auto entity : ECS::registry<DeathTimer>.entities)
+	assert(GameScene->m_Registry.view<ScreenState>().size() <= 1); 
+	auto screenStateEntitiesView = GameScene->m_Registry.view<ScreenState>();
+	for (auto entity : screenStateEntitiesView)
 	{
-		// Progress timer
-		auto& counter = ECS::registry<DeathTimer>.get(entity);
-		counter.counter_ms -= elapsed_ms;
+		auto& screenComponent = screenStateEntitiesView.get<ScreenState>(entity);
 
-		// Reduce window brightness if any of the present salmons is dying
-		screen.darken_screen_factor = 1-counter.counter_ms/3000.f;
+		// TODO using EnTT
+		//for (auto entity : ECS::registry<DeathTimer>.entities)
+		//{
+		//	// Progress timer
+		//	auto& counter = ECS::registry<DeathTimer>.get(entity);
+		//	counter.counter_ms -= elapsed_ms;
 
-		// Restart the game once the death timer expired
-		if (counter.counter_ms < 0)
-		{
-			ECS::registry<DeathTimer>.remove(entity);
-			screen.darken_screen_factor = 0;
-			restart();
-			return;
-		}
+		//	// Reduce window brightness if any of the present salmons is dying
+		//	screenComponent.darken_screen_factor = 1 - counter.counter_ms / 3000.f;
+
+		//	// Restart the game once the death timer expired
+		//	if (counter.counter_ms < 0)
+		//	{
+		//		ECS::registry<DeathTimer>.remove(entity);
+		//		screenComponent.darken_screen_factor = 0;
+		//		restart();
+		//		return;
+		//	}
+		//}
 	}
 
 	// !!! TODO A1: update LightUp timers and remove if time drops below zero, similar to the DeathTimer
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	for (auto entity : ECS::registry<LightUp>.entities)
-	{
-		// Progress timer
-		auto& lightUpComponent = ECS::registry<LightUp>.get(entity);
-		lightUpComponent.counter_ms -= elapsed_ms;
+	// TODO using EnTT
+	//for (auto entity : ECS::registry<LightUp>.entities)
+	//{
+	//	// Progress timer
+	//	auto& lightUpComponent = ECS::registry<LightUp>.get(entity);
+	//	lightUpComponent.counter_ms -= elapsed_ms;
 
-		// Restart the game once the death timer expired
-		if (lightUpComponent.counter_ms < 0)
-			ECS::registry<LightUp>.remove(entity);
-	}
+	//	// Restart the game once the death timer expired
+	//	if (lightUpComponent.counter_ms < 0)
+	//		ECS::registry<LightUp>.remove(entity);
+	//}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,8 +219,9 @@ void WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 // Reset the world state to its initial state
 void WorldSystem::restart()
 {
+	// TODO using EnTT
 	// Debugging for memory/component leaks
-	ECS::ContainerInterface::list_all_components();
+	//ECS::ContainerInterface::list_all_components();
 	std::cout << "Restarting\n";
 
 	// Reset the game speed
@@ -220,14 +229,14 @@ void WorldSystem::restart()
 
 	// Remove all entities that we created
 	// All that have a motion, we could also iterate over all fish, turtles, ... but that would be more cumbersome
-	while (ECS::registry<Motion>.entities.size()>0)
-		ECS::ContainerInterface::remove_all_components_of(ECS::registry<Motion>.entities.back());
+	//while (ECS::registry<Motion>.entities.size()>0)
+	//	ECS::ContainerInterface::remove_all_components_of(ECS::registry<Motion>.entities.back());
 
-	// Debugging for memory/component leaks
-	ECS::ContainerInterface::list_all_components();
+	//// Debugging for memory/component leaks
+	//ECS::ContainerInterface::list_all_components();
 
 	// Create a new salmon
-	player_salmon = Salmon::createSalmon({ 100, 200 });
+	player_salmon = Salmon::createSalmon({ 100, 200 }, GameScene);
 
 	// !! TODO A3: Enable static pebbles on the ground
 	/*
@@ -320,7 +329,9 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 void WorldSystem::on_mouse_move(vec2 mouse_pos)
 {
-	if (!ECS::registry<DeathTimer>.has(player_salmon))
+	//if (!ECS::registry<DeathTimer>.has(player_salmon))
+	// tiny_ecs way above, EnTT below:
+	if (!player_salmon.HasComponent<DeathTimer>())
 	{
 		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		// TODO A1: HANDLE SALMON ROTATION HERE
@@ -331,7 +342,9 @@ void WorldSystem::on_mouse_move(vec2 mouse_pos)
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		auto& salmonMotionComponent = ECS::registry<Motion>.get(player_salmon);
+		//auto& salmonMotionComponent = ECS::registry<Motion>.get(player_salmon);
+		// tiny_ecs way above, EnTT below:
+		auto& salmonMotionComponent = player_salmon.GetComponent<Motion>();
 		glm::vec2 disp = mouse_pos - salmonMotionComponent.position;
 		float angle = atan2(disp.y, disp.x);
 		salmonMotionComponent.angle = angle;
@@ -346,7 +359,9 @@ void WorldSystem::on_mouse_move(vec2 mouse_pos)
 void WorldSystem::HandlePlayerMovement(float deltaTime)
 {
 	// Move salmon if alive
-	if (!ECS::registry<DeathTimer>.has(player_salmon))
+	//if (!ECS::registry<DeathTimer>.has(player_salmon))
+	// tiny_ecs way above, EnTT below:
+	if (!player_salmon.HasComponent<DeathTimer>())
 	{
 		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		// TODO A1: HANDLE SALMON MOVEMENT HERE
@@ -357,7 +372,9 @@ void WorldSystem::HandlePlayerMovement(float deltaTime)
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		auto& salmonMotionComponent = ECS::registry<Motion>.get(player_salmon);
+		//auto& salmonMotionComponent = ECS::registry<Motion>.get(player_salmon);
+		// tiny_ecs way above, EnTT below:
+		auto& salmonMotionComponent = player_salmon.GetComponent<Motion>();
 
 		float playerFishMaxSpeed = 250.0f;
 		float playerFishAcceleration = 50.0f;

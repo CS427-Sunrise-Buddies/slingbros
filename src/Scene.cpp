@@ -1,5 +1,5 @@
-#include "Scene.hpp"
-#include "Entity.hpp"
+#include "Scene.h"
+#include "Entity.h"
 
 // TODO: still need a file which defines all the Component structs we will be using
 //#include "Components.h"

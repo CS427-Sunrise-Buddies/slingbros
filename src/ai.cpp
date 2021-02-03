@@ -1,6 +1,6 @@
 // internal
 #include "ai.hpp"
-#include "tiny_ecs.hpp"
+//#include "tiny_ecs.hpp"
 
 void AISystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 {

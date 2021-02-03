@@ -1,7 +1,7 @@
 #pragma once
 
 #include "entt.hpp"
-#include "Scene.hpp"
+#include "Scene.h"
 
 // Credit for the general Entity/Scene implementation structure used here goes to The Cherno, see reference video here: https://www.youtube.com/watch?v=D4hz0wEB978&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT&index=77
 
@@ -28,10 +28,11 @@ namespace ECS_ENTT {
 		T& AddComponent(Args&&... args)
 		{
 			assert(!HasComponent<T>(), "Trying to add a component that this Entity already has!");
-			T& component = m_Scene->m_Registry.emplace<T>(m_EntityID, std::forward<Args>(args)...);
+			T& component = m_Scene->m_Registry.emplace<T>(m_EntityID, std::forward<Args>(args)...); // something like std::dynamic_cast<T&>() ???
 			// TODO (once we actually have components!)
 			// Easy way to handle anything that needs to happen when a certain component is added:
 			//m_Scene->OnComponentAdded<T>(*this, component); 
+
 			return component;
 		}
 

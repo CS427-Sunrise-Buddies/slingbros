@@ -2,6 +2,8 @@
 #include "render.hpp"
 #include "render_components.hpp"
 
+#include "world.hpp"
+
 #include <iostream>
 #include <fstream>
 
@@ -28,11 +30,12 @@ RenderSystem::~RenderSystem()
 	// delete allocated resources
 	glDeleteFramebuffers(1, &frame_buffer);
 
+	// TODO: update the following to work with EnTT ECS
 	// remove all entities created by the render system
-	while (ECS::registry<Motion>.entities.size() > 0)
+	/*while (ECS::registry<Motion>.entities.size() > 0)
 		ECS::ContainerInterface::remove_all_components_of(ECS::registry<Motion>.entities.back());
 	while (ECS::registry<ShadedMeshRef>.entities.size() > 0)
-		ECS::ContainerInterface::remove_all_components_of(ECS::registry<ShadedMeshRef>.entities.back());
+		ECS::ContainerInterface::remove_all_components_of(ECS::registry<ShadedMeshRef>.entities.back());*/
 }
 
 // Create a new sprite and register it with ECS
@@ -113,5 +116,6 @@ void RenderSystem::initScreenTexture()
 
 	// Initialize the screen texture and its state
 	screen_sprite.texture.create_from_screen(&window, depth_render_buffer_id.data());
-	ECS::registry<ScreenState>.emplace(screen_state_entity);
+	screen_state_entity = WorldSystem::GameScene->CreateEntity("Screen State Entity"); // TODO might want to have this entity be in another scene?
+	screen_state_entity.AddComponent<ScreenState>();
 }

@@ -1,6 +1,6 @@
 // internal
 #include "physics.hpp"
-#include "tiny_ecs.hpp"
+//#include "tiny_ecs.hpp"
 #include "debug.hpp"
 
 // Returns the local bounding coordinates scaled by the current size of the entity 
@@ -30,6 +30,8 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	// Move entities based on how much time has passed, this is to (partially) avoid
 	// having entities move at different speed based on the machine.
 	
+	// TODO using EnTT
+	/* 
 	for (auto& motion : ECS::registry<Motion>.components)
 	{
 		float step_seconds = 1.0f * (elapsed_ms / 1000.f);
@@ -98,9 +100,11 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	// TODO A3: HANDLE PEBBLE COLLISIONS HERE
 	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 3
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	*/
 }
 
-PhysicsSystem::Collision::Collision(ECS::Entity& other)
-{
-	this->other = other;
-}
+// TODO using EnTT
+//PhysicsSystem::Collision::Collision(ECS::Entity& other)
+//{
+//	this->other = other;
+//}

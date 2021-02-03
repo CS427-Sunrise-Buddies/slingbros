@@ -3,8 +3,9 @@
 #include <vector>
 
 #include "common.hpp"
-#include "tiny_ecs.hpp"
-#include "Entity.hpp"
+//#include "tiny_ecs.hpp"
+
+#include "Entity.h"
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // DON'T WORRY ABOUT THIS CLASS UNTIL ASSIGNMENT 3

@@ -4,8 +4,8 @@
 #include "common.hpp"
 #include "salmon.hpp"
 
-#include "Scene.hpp"
-#include "Entity.hpp"
+#include "Scene.h"
+#include "Entity.h"
 
 // stlib
 #include <vector>
@@ -63,7 +63,7 @@ private:
 
 	// Game state
 	float current_speed;
-	ECS::Entity player_salmon;
+	ECS_ENTT::Entity player_salmon;
 	
 	// music references
 	Mix_Music* background_music;

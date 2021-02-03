@@ -9,12 +9,13 @@
 // internal
 #include "common.hpp"
 #include "world.hpp"
-#include "tiny_ecs.hpp"
-#include "Entity.hpp"
+//#include "tiny_ecs.hpp"
 #include "render.hpp"
 #include "physics.hpp"
 #include "ai.hpp"
 #include "debug.hpp"
+
+#include "Entity.h"
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -54,7 +55,7 @@ int main()
 		DebugSystem::clearDebugComponents();
 		ai.step(elapsed_ms, window_size_in_game_units);
 		world.step(elapsed_ms, window_size_in_game_units);
-		world.HandlePlayerMovement(elapsed_ms);
+		//world.HandlePlayerMovement(elapsed_ms);
 		physics.step(elapsed_ms, window_size_in_game_units);
 		//world.handle_collisions(); // TODO
 
