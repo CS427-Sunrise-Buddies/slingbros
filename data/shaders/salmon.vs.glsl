@@ -1,0 +1,41 @@
+#version 330 
+
+// Input attributes
+in vec3 in_position;
+in vec3 in_color;
+
+out vec3 vcolor;
+out vec2 vpos;
+
+// Application data
+uniform mat3 transform;
+uniform mat3 view;
+uniform mat3 projection;
+
+void main()
+{
+	vpos = in_position.xy; // local coordinated before transform
+	vcolor = in_color;
+	vec3 pos = projection * view * transform * vec3(in_position.xy, 1.0); // why not simply *in_position.xyz ?
+	gl_Position = vec4(pos.xy, in_position.z, 1.0);
+}
+
+// TODO
+//// Input attributes
+//in vec3 in_position;
+//in vec3 in_color;
+//
+//out vec3 vcolor;
+//out vec2 vpos;
+//
+//// Application data
+//uniform mat4 transform;
+//uniform mat4 projection;
+//
+//void main()
+//{
+//	vpos = in_position.xy; // local coordinates before transform
+//	vcolor = in_color;
+//	vec4 pos = projection * transform * vec4(in_position.xy, in_position.z, 1.0);
+//	gl_Position = vec4(pos.xyz, 1.0);
+//}
