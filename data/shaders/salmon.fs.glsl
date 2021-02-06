@@ -22,4 +22,7 @@ void main()
 	 	// 0.8 is just to make it not too strong
 	 	color.xyz += (0.3 - radius) * 0.8 * vec3(1.0, 1.0, 0.0);
 	}
+
+	// TESTING
+	//color = vec4(1.0,1.0,1.0,1.0);
 }

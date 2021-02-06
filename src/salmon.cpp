@@ -27,9 +27,9 @@ ECS_ENTT::Entity Salmon::createSalmon(vec2 position, ECS_ENTT::Scene* scene)
 	// Using the above with EnTT, instead of the tiny_ecs way below for reference:
 	//Motion& motionComponent = ECS::registry<Motion>.emplace(salmonEntity);
 	motionComponent.position = position;
-	motionComponent.angle = 0.f;
-	motionComponent.velocity = { 0.f, 0.f };
-	motionComponent.scale = resource.mesh.original_size * 150.f;
+	motionComponent.angle = 0.0f;
+	motionComponent.velocity = { 0.0f, 0.0f }; //, 0.0f };
+	motionComponent.scale = { resource.mesh.original_size.x * 150.f, resource.mesh.original_size.y * 150.f }; //, 1.0f };
 	motionComponent.scale.x *= -1; // point front to the right
 
 	// Create an (empty) Salmon component to be able to refer to all Salmons

@@ -6,6 +6,7 @@
 
 #include "Scene.h"
 #include "Entity.h"
+#include "Camera.h"
 
 struct InstancedMesh;
 struct ShadedMesh;
@@ -25,7 +26,7 @@ public:
 	~RenderSystem();
 
 	// Draw all entities
-	void draw(vec2 window_size_in_game_units);
+	void draw(vec2 window_size_in_game_units, Camera& activeCamera);
 
 	// Expose the creating of visual representations to other systems
 	static void createSprite(ShadedMesh& mesh_container, std::string texture_path, std::string shader_name);

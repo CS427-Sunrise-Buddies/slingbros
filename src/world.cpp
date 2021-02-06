@@ -345,7 +345,7 @@ void WorldSystem::on_mouse_move(vec2 mouse_pos)
 		//auto& salmonMotionComponent = ECS::registry<Motion>.get(player_salmon);
 		// tiny_ecs way above, EnTT below:
 		auto& salmonMotionComponent = player_salmon.GetComponent<Motion>();
-		glm::vec2 disp = mouse_pos - salmonMotionComponent.position;
+		glm::vec2 disp = mouse_pos - glm::vec2(salmonMotionComponent.position.x, salmonMotionComponent.position.y);
 		float angle = atan2(disp.y, disp.x);
 		salmonMotionComponent.angle = angle;
 

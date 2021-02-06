@@ -29,16 +29,25 @@ inline std::string mesh_path(const std::string& name) { return data_path() + "/m
 // The 'Transform' component handles transformations passed to the Vertex shader
 // (similar to the gl Immediate mode equivalent, e.g., glTranslate()...)
 struct Transform {
-	mat3 mat = { { 1.f, 0.f, 0.f }, { 0.f, 1.f, 0.f}, { 0.f, 0.f, 1.f} }; // start with the identity
+	// TODO
+	//mat4 mat = { { 1.f, 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f, 0.f}, { 0.f, 0.f, 1.f, 0.f}, { 0.f, 0.f, 0.f, 1.f} }; // start with the identity
+	mat3 mat = { { 1.f, 0.f, 0.f}, { 0.f, 1.f, 0.f}, { 0.f, 0.f, 1.f}}; // start with the identity
+	/*void scale(vec3 scale);
+	void rotate(float radians);
+	void translate(vec3 offset);*/
 	void scale(vec2 scale);
 	void rotate(float radians);
-	void translate(vec2 offset);
+	void translate(vec2 offset); 
 };
 
 // All data relevant to the shape and motion of entities
 struct Motion {
-	vec2 position = { 0, 0 };
 	float angle = 0;
+	// TODO
+	/*vec3 position = { 0, 0, 0 };
+	vec3 velocity = { 0, 0, 0 };
+	vec3 scale = { 10, 10, 1 };*/
+	vec2 position = { 0, 0 };
 	vec2 velocity = { 0, 0 };
 	vec2 scale = { 10, 10 };
 };

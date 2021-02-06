@@ -41,6 +41,7 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& project
 	gl_has_errors();
 
 	GLint transform_uloc = glGetUniformLocation(texmesh.effect.program, "transform");
+	// TODO view matrix once we have some Camera system
 	GLint projection_uloc = glGetUniformLocation(texmesh.effect.program, "projection");
 	gl_has_errors();
 
@@ -113,6 +114,7 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& project
 	//GLsizei num_triangles = num_indices / 3;
 
 	// Setting uniform values to the currently bound program
+	// TODO use mat4 uniforms instead
 	glUniformMatrix3fv(transform_uloc, 1, GL_FALSE, (float*)&transform.mat);
 	glUniformMatrix3fv(projection_uloc, 1, GL_FALSE, (float*)&projection);
 	gl_has_errors();
@@ -182,7 +184,7 @@ void RenderSystem::drawToScreen()
 
 // Render our game world
 // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/
-void RenderSystem::draw(vec2 window_size_in_game_units)
+void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 {
 	// Getting size of window
 	ivec2 frame_buffer_size; // in pixels
@@ -210,7 +212,9 @@ void RenderSystem::draw(vec2 window_size_in_game_units)
 	float sy = 2.f / (top - bottom);
 	float tx = -(right + left) / (right - left);
 	float ty = -(top + bottom) / (top - bottom);
-	mat3 projection_2D{ { sx, 0.f, 0.f },{ 0.f, sy, 0.f },{ tx, ty, 1.f } };
+	mat3 projectionMatrix{ { sx, 0.f, 0.f },{ 0.f, sy, 0.f },{ tx, ty, 1.f } };
+	// TODO instead of using a hardcoded projection matrix, use the activeCamera's:
+	//mat4 projectionMatrix = activeCamera.GetProjectionMatrix(); // TODO 
 
 	// Draw all textured meshes that have a position and size component
 	// TODO we should probably be passing in a specific scene to this function as a parameter and then draw that scene
@@ -221,7 +225,7 @@ void RenderSystem::draw(vec2 window_size_in_game_units)
 		if (!entity.HasComponent<Motion>())
 			continue;
 		// Note, its not very efficient to access elements indirectly via the entity albeit iterating through all Sprites in sequence
-		drawTexturedMesh(entity, projection_2D);
+		drawTexturedMesh(entity, projectionMatrix);
 		gl_has_errors();
 	}
 

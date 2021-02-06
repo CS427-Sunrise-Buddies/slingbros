@@ -16,6 +16,7 @@
 #include "debug.hpp"
 
 #include "Entity.h"
+#include "Camera.h"
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -37,6 +38,8 @@ int main()
 	RenderSystem renderer(*world.window);
 	PhysicsSystem physics;
 	AISystem ai;
+	Camera mainCamera;
+	mainCamera.SetViewportSize(window_size_in_px.x, window_size_in_px.y);
 
 	// Set all states to default
 	world.restart();
@@ -59,7 +62,7 @@ int main()
 		physics.step(elapsed_ms, window_size_in_game_units);
 		//world.handle_collisions(); // TODO
 
-		renderer.draw(window_size_in_game_units);
+		renderer.draw(window_size_in_game_units, mainCamera);
 	}
 
 	return EXIT_SUCCESS;
