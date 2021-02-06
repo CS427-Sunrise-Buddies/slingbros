@@ -422,3 +422,22 @@ void WorldSystem::HandlePlayerMovement(float deltaTime)
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	}
 }
+
+void WorldSystem::HandleCameraMovement(Camera* camera, float deltaTime)
+{
+	glm::vec3 cameraPosition = camera->GetPosition();
+
+	float cameraSpeed = 80.0f;
+
+	// WASD keys
+	if (IsKeyPressed(GLFW_KEY_W))
+		cameraPosition.y -= cameraSpeed * deltaTime / 100.0f;
+	if (IsKeyPressed(GLFW_KEY_S))
+		cameraPosition.y += cameraSpeed * deltaTime / 100.0f;
+	if (IsKeyPressed(GLFW_KEY_A))
+		cameraPosition.x -= cameraSpeed * deltaTime / 100.0f;
+	if (IsKeyPressed(GLFW_KEY_D))
+		cameraPosition.x += cameraSpeed * deltaTime / 100.0f;
+
+	camera->SetPosition(cameraPosition);
+}

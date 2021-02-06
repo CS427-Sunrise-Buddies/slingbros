@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& projection)
+void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& view, const mat3& projection)
 {
 	//auto& motion = ECS::registry<Motion>.get(entity);
 	//auto& texmesh = *ECS::registry<ShadedMeshRef>.get(entity).reference_to_cache;
@@ -41,7 +41,7 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& project
 	gl_has_errors();
 
 	GLint transform_uloc = glGetUniformLocation(texmesh.effect.program, "transform");
-	// TODO view matrix once we have some Camera system
+	GLint view_uloc = glGetUniformLocation(texmesh.effect.program, "view"); // allows for camera movement
 	GLint projection_uloc = glGetUniformLocation(texmesh.effect.program, "projection");
 	gl_has_errors();
 
@@ -116,6 +116,7 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& project
 	// Setting uniform values to the currently bound program
 	// TODO use mat4 uniforms instead
 	glUniformMatrix3fv(transform_uloc, 1, GL_FALSE, (float*)&transform.mat);
+	glUniformMatrix3fv(view_uloc, 1, GL_FALSE, (float*)&view);
 	glUniformMatrix3fv(projection_uloc, 1, GL_FALSE, (float*)&projection);
 	gl_has_errors();
 
@@ -208,13 +209,14 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 	float right = window_size_in_game_units.x;
 	float bottom = window_size_in_game_units.y;
 
-	float sx = 2.f / (right - left);
+	/*float sx = 2.f / (right - left);
 	float sy = 2.f / (top - bottom);
 	float tx = -(right + left) / (right - left);
 	float ty = -(top + bottom) / (top - bottom);
-	mat3 projectionMatrix{ { sx, 0.f, 0.f },{ 0.f, sy, 0.f },{ tx, ty, 1.f } };
-	// TODO instead of using a hardcoded projection matrix, use the activeCamera's:
-	//mat4 projectionMatrix = activeCamera.GetProjectionMatrix(); // TODO 
+	mat3 projectionMatrix{ { sx, 0.f, 0.f },{ 0.f, sy, 0.f },{ tx, ty, 1.f } };*/
+	// Instead of using a hardcoded projection matrix, use the activeCamera's (still hardcoded for now)
+	mat3 projectionMatrix = activeCamera.GetProjectionMatrix(); 
+	mat3 viewMatrix = activeCamera.GetViewMatrix();
 
 	// Draw all textured meshes that have a position and size component
 	// TODO we should probably be passing in a specific scene to this function as a parameter and then draw that scene
@@ -225,7 +227,7 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 		if (!entity.HasComponent<Motion>())
 			continue;
 		// Note, its not very efficient to access elements indirectly via the entity albeit iterating through all Sprites in sequence
-		drawTexturedMesh(entity, projectionMatrix);
+		drawTexturedMesh(entity, viewMatrix, projectionMatrix);
 		gl_has_errors();
 	}
 

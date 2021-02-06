@@ -6,6 +6,7 @@
 
 #include "Scene.h"
 #include "Entity.h"
+#include "Camera.h"
 
 // stlib
 #include <vector>
@@ -40,6 +41,9 @@ public:
 
 	// Handle fish movement
 	void HandlePlayerMovement(float deltaTime);
+
+	// Handle camera movement
+	void HandleCameraMovement(Camera* camera, float deltaTime);
 
 	// Should the game be over ?
 	bool is_over() const;

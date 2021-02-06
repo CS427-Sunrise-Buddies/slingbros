@@ -59,6 +59,7 @@ int main()
 		ai.step(elapsed_ms, window_size_in_game_units);
 		world.step(elapsed_ms, window_size_in_game_units);
 		//world.HandlePlayerMovement(elapsed_ms);
+		world.HandleCameraMovement(&mainCamera, elapsed_ms);
 		physics.step(elapsed_ms, window_size_in_game_units);
 		//world.handle_collisions(); // TODO
 

@@ -16,66 +16,80 @@ public:
 
 	void SetViewportSize(uint32_t width, uint32_t height)
 	{
+		m_ViewportWidth = width;
+		m_ViewportHeight = height;
 		m_AspectRatio = (float)width / (float)height;
-		RecalculateProjection();
+		RecalculateProjectionMatrix();
+	}
+
+	glm::vec3 GetPosition() const { return m_Position; }
+	void SetPosition(glm::vec3 position)
+	{
+		m_Position = position;
+		RecalculateViewMatrix();
 	}
 
 	ProjectionType GetProjectionType() const { return m_ProjectionType; }
 	void SetProjectionType(int newProjectionType)
 	{
 		m_ProjectionType = (ProjectionType)newProjectionType;
-		RecalculateProjection();
+		RecalculateProjectionMatrix();
 	}
 
 	float GetOrthographicSize() const { return m_OrthoSize; }
 	void SetOrthographicSize(float newSize)
 	{
 		m_OrthoSize = newSize;
-		RecalculateProjection();
+		RecalculateProjectionMatrix();
 	}
 
 	float GetOrthographicNearBound() const { return m_OrthoNear; }
 	void SetOrthographicNearBound(float newNearBound)
 	{
 		m_OrthoNear = newNearBound;
-		RecalculateProjection();
+		RecalculateProjectionMatrix();
 	}
 
 	float GetOrthographicFarBound() const { return m_OrthoFar; }
 	void SetOrthographicFarBound(float newFarBound)
 	{
 		m_OrthoFar = newFarBound;
-		RecalculateProjection();
+		RecalculateProjectionMatrix();
 	}
 
 	float GetPerspectiveFOVy() const { return m_PerspectiveFOVy; }
 	void SetPerspectiveFOVy(float newFOVyRadians)
 	{
 		m_PerspectiveFOVy = newFOVyRadians;
-		RecalculateProjection();
+		RecalculateProjectionMatrix();
 	}
 
 	float GetPerspectiveNearBound() const { return m_PerspectiveNear; }
 	void SetPerspectiveNearBound(float newNearBound)
 	{
 		m_PerspectiveNear = newNearBound;
-		RecalculateProjection();
+		RecalculateProjectionMatrix();
 	}
 
 	float GetPerspectiveFarBound() const { return m_PerspectiveFar; }
 	void SetPerspectiveFarBound(float newFarBound)
 	{
 		m_PerspectiveFar = newFarBound;
-		RecalculateProjection();
+		RecalculateProjectionMatrix();
 	}
 
-	const glm::mat4& Camera::GetProjectionMatrix() const
+	const glm::mat3& GetProjectionMatrix() const
 	{
 		return m_ProjectionMatrix;
 	}
+	const glm::mat3& GetViewMatrix() const
+	{
+		return m_ViewMatrix;
+	}
 
 private:
-	void RecalculateProjection();
+	void RecalculateProjectionMatrix();
+	void RecalculateViewMatrix();
 
 private:
 	// Defaults to an orthographic camera
@@ -92,8 +106,13 @@ private:
 	float m_PerspectiveFar = 100.0f;
 
 	float m_AspectRatio = 0.0f;
+	uint32_t m_ViewportWidth, m_ViewportHeight;
 
-	// Note this camera class only requires the projection matrix (since the camera pos/rot/scale is a part of the camera entity's transform)
-	glm::mat4 m_ProjectionMatrix = glm::mat4(0);
+	glm::mat3 m_ProjectionMatrix = glm::mat3(1); 
+	//glm::mat4 m_ProjectionMatrix = glm::mat4(0); // TODO for 3D rendering
+
+	glm::vec3 m_Position = glm::vec3(-100, -100, 0);
+	glm::mat3 m_ViewMatrix = glm::mat3(1); 
+	//glm::mat4 m_ViewMatrix = glm::mat4(0); // TODO for 3D rendering
 
 };
