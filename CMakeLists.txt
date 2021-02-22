@@ -33,7 +33,7 @@ if (IS_OS_MAC)
   link_directories(/usr/local/lib)
 endif()
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} "src/entities/slingbro.hpp" "src/entities/slingbro.cpp"  "src/entities/ground_tile.hpp" "src/entities/ground_tile.cpp" "src/entities/start_tile.hpp" "src/entities/start_tile.cpp" "src/entities/goal_tile.hpp" "src/entities/goal_tile.cpp" "src/entities/basic_enemy.hpp" "src/entities/basic_enemy.cpp" "src/entities/projectile.hpp" "src/entities/projectile.cpp" src/ai/behavioral_tree.hpp src/ai/movement.cpp src/ai/behavioral_tree.cpp src/ai/movement.hpp src/ai/attack.cpp src/ai/attack.hpp)
 target_include_directories(${PROJECT_NAME} PUBLIC src/)
 
 # Added this so policy CMP0065 doesn't scream
@@ -133,7 +133,7 @@ elseif (IS_OS_WINDOWS)
         # increase warning level
         "/W4"
 
-        # Turn warning "not all control paths return a value" into an error
+        # Patrol warning "not all control paths return a value" into an error
         "/we4715"
 
         # use sane exception handling, rather than trying to catch segfaults and allowing resource leaks and UB. Yup... See "Default exception handling behavior" at

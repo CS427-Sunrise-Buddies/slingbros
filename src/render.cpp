@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& view, const mat3& projection)
+void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat4& view, const mat4& projection)
 {
 	//auto& motion = ECS::registry<Motion>.get(entity);
 	//auto& texmesh = *ECS::registry<ShadedMeshRef>.get(entity).reference_to_cache;
@@ -19,15 +19,7 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& view, c
 	// Incrementally updates transformation matrix, thus ORDER IS IMPORTANT
 	Transform transform;
 	transform.translate(motion.position);
-
-	// !!! TODO A1: add rotation to the chain of transformations, mind the order of transformations
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	transform.rotate(motion.angle);
-
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	transform.rotate(motion.angle, glm::vec3(0.0f, 0.0f, 1.0f));
 	transform.scale(motion.scale);
 
 	// Setting shaders
@@ -35,11 +27,12 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& view, c
 	glBindVertexArray(texmesh.mesh.vao);
 	gl_has_errors();
 
-	// Enabling alpha channel for textures
+	// Enabling alpha channel and depth test for textures
 	glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
 	gl_has_errors();
 
+	GLuint time_uloc = glGetUniformLocation(texmesh.effect.program, "time");
 	GLint transform_uloc = glGetUniformLocation(texmesh.effect.program, "transform");
 	GLint view_uloc = glGetUniformLocation(texmesh.effect.program, "view"); // allows for camera movement
 	GLint projection_uloc = glGetUniformLocation(texmesh.effect.program, "projection");
@@ -73,8 +66,6 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& view, c
 
 		// Light up?
 		// !!! TODO A1: check whether the entity has a LightUp component
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//if (ECS::registry<LightUp>.has(entity))
 		if (entity.HasComponent<LightUp>())
@@ -91,9 +82,6 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& view, c
 			GLint light_up_uloc = glGetUniformLocation(texmesh.effect.program, "light_up");
 			glUniform1i(light_up_uloc, (GLint)0);
 		}
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	}
 	else
 	{
@@ -114,10 +102,10 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat3& view, c
 	//GLsizei num_triangles = num_indices / 3;
 
 	// Setting uniform values to the currently bound program
-	// TODO use mat4 uniforms instead
-	glUniformMatrix3fv(transform_uloc, 1, GL_FALSE, (float*)&transform.mat);
-	glUniformMatrix3fv(view_uloc, 1, GL_FALSE, (float*)&view);
-	glUniformMatrix3fv(projection_uloc, 1, GL_FALSE, (float*)&projection);
+	glUniform1f(time_uloc, static_cast<float>(glfwGetTime() * 10.0f));
+	glUniformMatrix4fv(transform_uloc, 1, GL_FALSE, (float*)&transform.matrix);
+	glUniformMatrix4fv(view_uloc, 1, GL_FALSE, (float*)&view);
+	glUniformMatrix4fv(projection_uloc, 1, GL_FALSE, (float*)&projection);
 	gl_has_errors();
 
 	// Drawing of num_indices/3 triangles specified in the index buffer
@@ -198,25 +186,14 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 	// Clearing backbuffer
 	glViewport(0, 0, frame_buffer_size.x, frame_buffer_size.y);
 	glDepthRange(0.00001, 10);
-	glClearColor(0, 0, 1, 1.0);
+	glClearColor(0.0f, 0.6f, 0.2f, 1.0);
 	glClearDepth(1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	gl_has_errors();
 
-	// Fake projection matrix, scales with respect to window coordinates
-	float left = 0.f;
-	float top = 0.f;
-	float right = window_size_in_game_units.x;
-	float bottom = window_size_in_game_units.y;
-
-	/*float sx = 2.f / (right - left);
-	float sy = 2.f / (top - bottom);
-	float tx = -(right + left) / (right - left);
-	float ty = -(top + bottom) / (top - bottom);
-	mat3 projectionMatrix{ { sx, 0.f, 0.f },{ 0.f, sy, 0.f },{ tx, ty, 1.f } };*/
-	// Instead of using a hardcoded projection matrix, use the activeCamera's (still hardcoded for now)
-	mat3 projectionMatrix = activeCamera.GetProjectionMatrix(); 
-	mat3 viewMatrix = activeCamera.GetViewMatrix();
+	// Get the view and projection matrices from the active camera to be passed to the vertex shaders
+	glm::mat4 viewMatrix = activeCamera.GetViewMatrix();
+	glm::mat4 projMatrix = activeCamera.GetProjectionMatrix(); 
 
 	// Draw all textured meshes that have a position and size component
 	// TODO we should probably be passing in a specific scene to this function as a parameter and then draw that scene
@@ -227,7 +204,7 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 		if (!entity.HasComponent<Motion>())
 			continue;
 		// Note, its not very efficient to access elements indirectly via the entity albeit iterating through all Sprites in sequence
-		drawTexturedMesh(entity, viewMatrix, projectionMatrix);
+		drawTexturedMesh(entity, viewMatrix, projMatrix);
 		gl_has_errors();
 	}
 

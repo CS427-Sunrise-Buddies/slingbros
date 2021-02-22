@@ -2,13 +2,13 @@
 #include "salmon.hpp"
 #include "render.hpp"
 
-ECS_ENTT::Entity Salmon::createSalmon(vec2 position, ECS_ENTT::Scene* scene)
+ECS_ENTT::Entity Salmon::createSalmon(vec3 position, ECS_ENTT::Scene* scene)
 {
 	ECS_ENTT::Entity salmonEntity = scene->CreateEntity("Player Salmon");
 
 	std::string key = "salmon";
 	ShadedMesh& resource = cache_resource(key);
-	if (resource.mesh.vertices.size() == 0)
+	if (resource.mesh.vertices.empty())
 	{
 		resource.mesh.loadFromOBJFile(mesh_path("salmon.obj"));
 		RenderSystem::createColoredMesh(resource, "salmon");
@@ -23,13 +23,13 @@ ECS_ENTT::Entity Salmon::createSalmon(vec2 position, ECS_ENTT::Scene* scene)
 	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
 
 	// Setting initial motion values
-	Motion& motionComponent = salmonEntity.AddComponent<Motion>();
+	auto& motionComponent = salmonEntity.AddComponent<Motion>();
 	// Using the above with EnTT, instead of the tiny_ecs way below for reference:
 	//Motion& motionComponent = ECS::registry<Motion>.emplace(salmonEntity);
 	motionComponent.position = position;
 	motionComponent.angle = 0.0f;
-	motionComponent.velocity = { 0.0f, 0.0f }; //, 0.0f };
-	motionComponent.scale = { resource.mesh.original_size.x * 150.f, resource.mesh.original_size.y * 150.f }; //, 1.0f };
+	motionComponent.velocity = { 0.0f, 0.0f, 0.0f }; //, 0.0f };
+	motionComponent.scale = { resource.mesh.original_size.x * 150.f, resource.mesh.original_size.y * 150.f, 1.0f }; //, 1.0f };
 	motionComponent.scale.x *= -1; // point front to the right
 
 	// Create an (empty) Salmon component to be able to refer to all Salmons

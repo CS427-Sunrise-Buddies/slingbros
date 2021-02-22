@@ -1,3 +1,7 @@
 ext/glm/doc/*
 out/*
 .vs/*
+.idea/
+build/*
+.DS_Store
+cmake-build-debug

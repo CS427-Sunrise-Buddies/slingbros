@@ -20,14 +20,14 @@ namespace ECS_ENTT {
 		template<typename T>
 		T& GetComponent()
 		{
-			assert(HasComponent<T>(), "Entity does not have this type of component!");
+			assert(HasComponent<T>() && "Entity does not have this type of component!");
 			return m_Scene->m_Registry.get<T>(m_EntityID);
 		}
 
 		template<typename T, typename... Args>
 		T& AddComponent(Args&&... args)
 		{
-			assert(!HasComponent<T>(), "Trying to add a component that this Entity already has!");
+			assert(!HasComponent<T>() && "Trying to add a component that this Entity already has!");
 			T& component = m_Scene->m_Registry.emplace<T>(m_EntityID, std::forward<Args>(args)...); // something like std::dynamic_cast<T&>() ???
 			// TODO (once we actually have components!)
 			// Easy way to handle anything that needs to happen when a certain component is added:
@@ -39,7 +39,7 @@ namespace ECS_ENTT {
 		template<typename T>
 		void RemoveComponent()
 		{
-			assert(HasComponent<T>(), "Entity does not have this type of component!");
+			assert(HasComponent<T>() && "Entity does not have this type of component!");
 			m_Scene->m_Registry.remove<T>(m_EntityID);
 		}
 

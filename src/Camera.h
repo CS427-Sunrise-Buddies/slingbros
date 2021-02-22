@@ -22,6 +22,13 @@ public:
 		RecalculateProjectionMatrix();
 	}
 
+	float GetRotationZ() const { return m_RotationZ; }
+	void SetRotationZ(float degrees)
+	{
+		m_RotationZ = degrees;
+		RecalculateViewMatrix();
+	}
+
 	glm::vec3 GetPosition() const { return m_Position; }
 	void SetPosition(glm::vec3 position)
 	{
@@ -78,11 +85,11 @@ public:
 		RecalculateProjectionMatrix();
 	}
 
-	const glm::mat3& GetProjectionMatrix() const
+	const glm::mat4& GetProjectionMatrix() const
 	{
 		return m_ProjectionMatrix;
 	}
-	const glm::mat3& GetViewMatrix() const
+	const glm::mat4& GetViewMatrix() const
 	{
 		return m_ViewMatrix;
 	}
@@ -96,7 +103,7 @@ private:
 	ProjectionType m_ProjectionType = ProjectionType::Orthographic;
 
 	// Orthographic camera properties
-	float m_OrthoSize = 10.0f;
+	float m_OrthoSize = 1000.0f;
 	float m_OrthoNear = -10.0f;
 	float m_OrthoFar = 10.0f;
 
@@ -108,11 +115,10 @@ private:
 	float m_AspectRatio = 0.0f;
 	uint32_t m_ViewportWidth, m_ViewportHeight;
 
-	glm::mat3 m_ProjectionMatrix = glm::mat3(1); 
-	//glm::mat4 m_ProjectionMatrix = glm::mat4(0); // TODO for 3D rendering
+	glm::mat4 m_ProjectionMatrix = glm::mat4(1); 
 
-	glm::vec3 m_Position = glm::vec3(-100, -100, 0);
-	glm::mat3 m_ViewMatrix = glm::mat3(1); 
-	//glm::mat4 m_ViewMatrix = glm::mat4(0); // TODO for 3D rendering
+	float m_RotationZ = 0; // units are in degrees
+	glm::vec3 m_Position = glm::vec3(0, 0, 0);
+	glm::mat4 m_ViewMatrix = glm::mat4(1);
 
 };

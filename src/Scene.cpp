@@ -6,6 +6,8 @@
 
 namespace ECS_ENTT {
 
+	Scene::Scene(glm::vec2 size) : m_Size(size) {};
+
 	// Create an entity and associate it to this Scene
 	Entity Scene::CreateEntity(const std::string& name)
 	{

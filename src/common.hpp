@@ -16,6 +16,9 @@
 #include <glm/ext/vector_int2.hpp>  // ivec2
 #include <glm/vec3.hpp>             // vec3
 #include <glm/mat3x3.hpp>           // mat3
+
+#include <ai/behavioral_tree.hpp>
+
 using namespace glm;
 static const float PI = 3.14159265359f;
 
@@ -29,25 +32,38 @@ inline std::string mesh_path(const std::string& name) { return data_path() + "/m
 // The 'Transform' component handles transformations passed to the Vertex shader
 // (similar to the gl Immediate mode equivalent, e.g., glTranslate()...)
 struct Transform {
-	// TODO
-	//mat4 mat = { { 1.f, 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f, 0.f}, { 0.f, 0.f, 1.f, 0.f}, { 0.f, 0.f, 0.f, 1.f} }; // start with the identity
-	mat3 mat = { { 1.f, 0.f, 0.f}, { 0.f, 1.f, 0.f}, { 0.f, 0.f, 1.f}}; // start with the identity
-	/*void scale(vec3 scale);
-	void rotate(float radians);
-	void translate(vec3 offset);*/
-	void scale(vec2 scale);
-	void rotate(float radians);
-	void translate(vec2 offset); 
+	mat4 matrix = glm::mat4(1); // start with the identity
+	void scale(vec3 scale);
+	void rotate(float radians, vec3 axis);
+	void translate(vec3 offset);
 };
 
 // All data relevant to the shape and motion of entities
 struct Motion {
 	float angle = 0;
-	// TODO
-	/*vec3 position = { 0, 0, 0 };
-	vec3 velocity = { 0, 0, 0 };
-	vec3 scale = { 10, 10, 1 };*/
-	vec2 position = { 0, 0 };
-	vec2 velocity = { 0, 0 };
-	vec2 scale = { 10, 10 };
+	vec3 position = vec3(0, 0, 0);
+	vec3 velocity = vec3(0, 0, 0);
+	vec3 scale = vec3(10, 10, 1);
+};
+
+// AI component that stores the behavior tree for an entity
+struct AI {
+	BehaviorTree::Node* behavior_tree = NULL;
+};
+
+struct SlingMotion {
+	bool isClicked = false;
+	float magnitude = 0.f;
+	vec2 direction = { 0, 0 };
+};
+
+// to store all entities that represent a wall
+struct Wall
+{
+	vec3 position = vec3(0, 0, 0);
+};
+
+struct Gravity
+{
+	float gravitational_constant = 1000.0f;
 };

@@ -1,10 +1,14 @@
 #pragma once
 
+#include <string>
 #include "entt.hpp"
+
+#include <glm/vec2.hpp>
 
 // Credit for the general Entity/Scene implementation structure used here goes to The Cherno, see reference video here: https://www.youtube.com/watch?v=D4hz0wEB978&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT&index=77
 
-namespace ECS_ENTT {
+namespace ECS_ENTT
+{
 
 	class Entity;
 
@@ -13,11 +17,13 @@ namespace ECS_ENTT {
 	{
 	public:
 		Scene() = default;
+
+		explicit Scene(glm::vec2 size);
+
 		~Scene() = default;
 
-		static Scene* Create() { return new Scene(); }
-
 		Entity CreateEntity(const std::string& name = std::string());
+
 		void DestroyEntity(Entity entity);
 
 		void OnUpdate(float deltaTime);
@@ -25,6 +31,7 @@ namespace ECS_ENTT {
 	public:
 		// Registry to contain the component data and entity IDs
 		entt::registry m_Registry;
+		glm::vec2 m_Size;
 
 	private:
 		template<typename T>

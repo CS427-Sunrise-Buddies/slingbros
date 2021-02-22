@@ -5,11 +5,14 @@
 //#include "pebbles.hpp"
 #include "render_components.hpp"
 
+#include <glm/ext/matrix_transform.hpp>
+
 // stlib
 #include <string.h>
 #include <cassert>
 #include <sstream>
 #include <iostream>
+#include <entities/ground_tile.hpp>
 
 // Game configuration
 const size_t MAX_TURTLES = 15;
@@ -22,17 +25,20 @@ const float FISH_SPEED = 200.0f;
 // For this barebones template, this is just the main scene (Scenes are essentially just entity containers)
 ECS_ENTT::Scene* WorldSystem::GameScene = nullptr;
 
+Camera* WorldSystem::ActiveCamera = nullptr;
+
 // Create the fish world
 // Note, this has a lot of OpenGL specific things, could be moved to the renderer; but it also defines the callbacks to the mouse and keyboard. That is why it is called here.
 WorldSystem::WorldSystem(ivec2 window_size_px) :
-	points(0)
+		points(0)
 {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
 
 	///////////////////////////////////////
 	// Initialize GLFW
-	auto glfw_err_callback = [](int error, const char* desc) { std::cerr << "OpenGL:" << error << desc << std::endl; };
+	auto glfw_err_callback = [](int error, const char* desc)
+	{ std::cerr << "OpenGL:" << error << desc << std::endl; };
 	glfwSetErrorCallback(glfw_err_callback);
 	if (!glfwInit())
 		throw std::runtime_error("Failed to initialize GLFW");
@@ -50,7 +56,7 @@ WorldSystem::WorldSystem(ivec2 window_size_px) :
 	glfwWindowHint(GLFW_RESIZABLE, 0);
 
 	// Create the main window (for rendering, keyboard, and mouse input)
-	window = glfwCreateWindow(window_size_px.x, window_size_px.y, "Salmon Game Assignment", nullptr, nullptr);
+	window = glfwCreateWindow(window_size_px.x, window_size_px.y, "Slingbro", nullptr, nullptr);
 	if (window == nullptr)
 		throw std::runtime_error("Failed to glfwCreateWindow");
 
@@ -58,20 +64,36 @@ WorldSystem::WorldSystem(ivec2 window_size_px) :
 	// Input is handled using GLFW, for more info see
 	// http://www.glfw.org/docs/latest/input_guide.html
 	glfwSetWindowUserPointer(window, this);
-	auto key_redirect = [](GLFWwindow* wnd, int _0, int _1, int _2, int _3) { ((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_key(_0, _1, _2, _3); };
-	auto cursor_pos_redirect = [](GLFWwindow* wnd, double _0, double _1) { ((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_mouse_move({ _0, _1 }); };
+	auto key_redirect = [](GLFWwindow* wnd, int _0, int _1, int _2, int _3)
+	{
+		((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_key(_0, _1, _2, _3);
+	};
+	auto cursor_pos_redirect = [](GLFWwindow* wnd, double _0, double _1)
+	{
+		((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_mouse_move({ _0, _1 });
+	};
+	auto cursor_click_redirect = [](GLFWwindow* wnd, int _0, int _1, int _2)
+	{
+		((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_mouse_click(_0, _1, _2);
+	};
 	glfwSetKeyCallback(window, key_redirect);
 	glfwSetCursorPosCallback(window, cursor_pos_redirect);
+	glfwSetMouseButtonCallback(window, cursor_click_redirect);
 
 	// Playing background music indefinitely
 	init_audio();
 	Mix_PlayMusic(background_music, -1);
 	std::cout << "Loaded music\n";
 
-	WorldSystem::GameScene = ECS_ENTT::Scene::Create();
+	// Initialize the only scene we have right now
+	WorldSystem::GameScene = new ECS_ENTT::Scene({ 1000.f, 1000.f });
+
+	// Initialize the only camera we have right now
+	WorldSystem::ActiveCamera = new Camera(); // defaults to orthographic projection
 }
 
-WorldSystem::~WorldSystem(){
+WorldSystem::~WorldSystem()
+{
 	// Destroy music components
 	if (background_music != nullptr)
 		Mix_FreeMusic(background_music);
@@ -86,7 +108,7 @@ WorldSystem::~WorldSystem(){
 	//ECS::ContainerInterface::clear_all_components();
 
 	// Free memory of all of the game's scenes
-	delete(GameScene);
+	delete (GameScene);
 
 	// Close the window
 	glfwDestroyWindow(window);
@@ -107,10 +129,10 @@ void WorldSystem::init_audio()
 	salmon_eat_sound = Mix_LoadWAV(audio_path("salmon_eat.wav").c_str());
 
 	if (background_music == nullptr || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr)
-		throw std::runtime_error("Failed to load sounds make sure the data directory is present: "+
-			audio_path("music.wav")+
-			audio_path("salmon_dead.wav")+
-			audio_path("salmon_eat.wav"));
+		throw std::runtime_error("Failed to load sounds make sure the data directory is present: " +
+								 audio_path("music.wav") +
+								 audio_path("salmon_dead.wav") +
+								 audio_path("salmon_eat.wav"));
 
 }
 
@@ -122,54 +144,10 @@ void WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	title_ss << "Points: " << points;
 	glfwSetWindowTitle(window, title_ss.str().c_str());
 
-	// TODO using EnTT
-	// Removing out of screen entities
-	//auto& registry = ECS::registry<Motion>;
-
-	// Remove entities that leave the screen on the left side
-	// Iterate backwards to be able to remove without unterfering with the next object to visit
-	// (the containers exchange the last element with the current upon delete)
-	//for (int i = static_cast<int>(registry.components.size()) - 1; i >= 0; --i) 
-	//{
-	//	auto& motion = registry.components[i];
-	//	if (motion.position.x + abs(motion.scale.x) < 0.f)
-	//	{
-	//		// Added this check to make sure the salmon does not get removed
-	//		if(registry.entities[i].id != player_salmon.id)
-	//			ECS::ContainerInterface::remove_all_components_of(registry.entities[i]);
-	//	}
-	//}
-
-	// Testing EnTT integration is functional:
-	struct TagComponent
-	{
-		TagComponent(const std::string& tag)
-			: Tag(tag) {}
-
-		std::string Tag;
-	};
-
-	// Can't do this since tiny_ecs defines Entity too
-	//auto entityTest = GameScene->CreateEntity();
-
-	// EXAMPLE of the above code block using EnTT:
-	// Use an entity view to iterate through all entities with a motion component
-	//
-	auto motionEntitiesView = GameScene->m_Registry.view<Motion>();
-	for (auto entity : motionEntitiesView)
-	{
-		auto& motionComponent = motionEntitiesView.get<Motion>(entity);
-		if (motionComponent.position.x + abs(motionComponent.scale.x) < 0.0f)
-			GameScene->m_Registry.destroy(entity); // Might be bad, should be marked to be destroyed outside the iteration loop 
-	}
-
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// TODO A3: HANDLE PEBBLE SPAWN/UPDATES HERE
-	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 3
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// TODO Removing out of screen entities (for the appropriate entities like projectiles, for example
 
 	// Processing the salmon state
-	assert(GameScene->m_Registry.view<ScreenState>().size() <= 1); 
+	assert(GameScene->m_Registry.view<ScreenState>().size() <= 1);
 	auto screenStateEntitiesView = GameScene->m_Registry.view<ScreenState>();
 	for (auto entity : screenStateEntitiesView)
 	{
@@ -214,10 +192,19 @@ void WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+}
+
+template<typename ComponentType>
+void WorldSystem::RemoveAllEntitiesWithComponent()
+{
+	GameScene->m_Registry.view<ComponentType>().each([](const auto entityID, auto &&...) {
+			GameScene->m_Registry.destroy(entityID);
+		});
 }
 
 // Reset the world state to its initial state
-void WorldSystem::restart()
+void WorldSystem::restart() // notes: like Game::init
 {
 	// TODO using EnTT
 	// Debugging for memory/component leaks
@@ -235,8 +222,37 @@ void WorldSystem::restart()
 	//// Debugging for memory/component leaks
 	//ECS::ContainerInterface::list_all_components();
 
-	// Create a new salmon
-	player_salmon = Salmon::createSalmon({ 100, 200 }, GameScene);
+	// Remove all old entities in the scene
+	if(test_bro)
+		GameScene->DestroyEntity(test_bro);
+	if (test_enemy)
+		GameScene->DestroyEntity(test_enemy);
+	RemoveAllEntitiesWithComponent<Projectile>();
+	RemoveAllEntitiesWithComponent<Wall>();
+
+	// Create a new bro
+	test_bro = SlingBro::createSlingBro({ 500, 300, 0 }, GameScene);
+	test_bro.AddComponent<Gravity>();
+	test_enemy = BasicEnemy::createBasicEnemy({ 200, 200, 0 }, GameScene);
+
+	// temporary walls
+	float wall_displacement = 30;
+	for (int i = -wall_displacement; i < GameScene->m_Size.x+wall_displacement; i += 100)
+	{
+		ECS_ENTT::Entity top = GroundTile::createGroundTile({ i, -wall_displacement, 0 }, GameScene); // top wall
+		top.AddComponent<Wall>();
+		auto bottom = GroundTile::createGroundTile({ i, GameScene->m_Size.y+wall_displacement, 0 }, GameScene); // bottom wall
+		bottom.AddComponent<Wall>();
+	}
+	for (int i = -wall_displacement; i < GameScene->m_Size.y+wall_displacement; i += 100)
+	{
+		auto left = GroundTile::createGroundTile({ -wall_displacement, i, 0 }, GameScene); // left wall
+		left.AddComponent<Wall>();
+		auto right = GroundTile::createGroundTile({ GameScene->m_Size.x+wall_displacement, i, 0 }, GameScene); // right wall
+		right.AddComponent<Wall>();
+	}
+
+
 
 	// !! TODO A3: Enable static pebbles on the ground
 	/*
@@ -251,41 +267,53 @@ void WorldSystem::restart()
 	*/
 }
 
+
+// Collisions between wall and non-wall entities - callback function, listening to PhysicsSystem::Collisions
+// example of observer pattern
+void WorldSystem::collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, bool hit_wall)
+{
+	if (!hit_wall && entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<Projectile>()) {
+		++points;
+		GameScene->m_Registry.destroy(entity_j);
+	}
+}
+
+/*
 // Compute collisions between entities
 void WorldSystem::handle_collisions()
 {
-	/*
 	// Loop over all collisions detected by the physics system
-	auto& registry = ECS::registry<PhysicsSystem::Collision>;
-	for (unsigned int i=0; i< registry.components.size(); i++)
+	auto registry = GameScene->m_Registry.view<PhysicsSystem::Collision>();
+
+    for (const entt::entity entity : registry)
 	{
 		// The entity and its collider
 		auto entity = registry.entities[i];
 		auto entity_other = registry.components[i].other;
 
-		// For now, we are only interested in collisions that involve the salmon
+		// if collision, bounce
 		if (ECS::registry<Salmon>.has(entity))
 		{
 			// Handled collisions here
 
-			// EXAMPLE 
+			// EXAMPLE
 			// Checking Salmon - Fish collisions
 			//if (ECS::registry<Fish>.has(entity_other))
 			//{
-				
+
 			//}
 		}
 	}
 
 	// Remove all collisions from this simulation step
 	ECS::registry<PhysicsSystem::Collision>.clear();
-	*/
 }
+*/
 
 // Should the game be over ?
 bool WorldSystem::is_over() const
 {
-	return glfwWindowShouldClose(window)>0;
+	return glfwWindowShouldClose(window) > 0;
 }
 
 bool WorldSystem::IsKeyPressed(const int glfwKeycode)
@@ -298,14 +326,12 @@ bool WorldSystem::IsKeyPressed(const int glfwKeycode)
 // TODO A1: check out https://www.glfw.org/docs/3.3/input_guide.html
 void WorldSystem::on_key(int key, int, int action, int mod)
 {
-	// Note: Moved the player Salmon movement handling to WorldSystem::HandlePlayerMovement()
-
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R)
 	{
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
-		
+
 		restart();
 	}
 
@@ -329,104 +355,96 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 void WorldSystem::on_mouse_move(vec2 mouse_pos)
 {
+
 	//if (!ECS::registry<DeathTimer>.has(player_salmon))
 	// tiny_ecs way above, EnTT below:
-	if (!player_salmon.HasComponent<DeathTimer>())
+	if (!test_bro.HasComponent<DeathTimer>())
 	{
 		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		// TODO A1: HANDLE SALMON ROTATION HERE
-		// xpos and ypos are relative to the top-left of the window, the salmon's 
+		// xpos and ypos are relative to the top-left of the window, the salmon's
 		// default facing direction is (1, 0)
 		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		//auto& salmonMotionComponent = ECS::registry<Motion>.get(player_salmon);
 		// tiny_ecs way above, EnTT below:
-		auto& salmonMotionComponent = player_salmon.GetComponent<Motion>();
-		glm::vec2 disp = mouse_pos - glm::vec2(salmonMotionComponent.position.x, salmonMotionComponent.position.y);
+		auto& m_slingbro = test_bro.GetComponent<Motion>();
+		vec2 disp = mouse_pos - vec2(m_slingbro.position);
 		float angle = atan2(disp.y, disp.x);
-		salmonMotionComponent.angle = angle;
+		m_slingbro.angle = angle;
+	}
 
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// TODO:
+	/*
+	- find bounding box/calculate centre of character
+	- for visual component, track isClicked to activate, and use bro_position - mouse pos to get vector
+	- make helper function for world coordinate conversion (where do it go?)
+	 **/
 
-		(void)mouse_pos;
+}
+
+
+// Don't think it's needed right now
+void WorldSystem::on_mouse_click(int button, int action, int mods)
+{
+	double mouseXPos, mouseYPos;
+	glfwGetCursorPos(window, &mouseXPos, &mouseYPos);
+	vec2 mouse_pos = vec2(mouseXPos, mouseYPos);
+
+	glm::mat4 viewMatrix = ActiveCamera->GetViewMatrix();
+	glm::mat4 projMatrix = ActiveCamera->GetProjectionMatrix();
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	auto& testBroMotionComponent = test_bro.GetComponent<Motion>();
+	glm::mat4 testBroModelMatrix = glm::translate(glm::mat4(1), testBroMotionComponent.position);
+	glm::vec4 testBroPosClipSpace = projMatrix * viewMatrix * testBroModelMatrix * glm::vec4(1.0f);
+	glm::vec2 testBroNDCS = glm::vec2(testBroPosClipSpace.x, testBroPosClipSpace.y) /
+							testBroPosClipSpace.w; // why is x in [-1,1] and y in [1,-1] ????
+	// TODO replace hardcoded window width, height in the following line
+	glm::vec2 testBroPosScreenSpace = glm::vec2(((testBroNDCS.x + 1.0f) / 2.0f) * 1200,
+			800 - ((testBroNDCS.y + 1.0f) / 2.0f) * 800);
+	glm::vec2 dispVecFromTestBro = mouse_pos - testBroPosScreenSpace;
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	bool& isBroClicked = test_bro.GetComponent<SlingMotion>().isClicked;
+	vec2& dragDir = test_bro.GetComponent<SlingMotion>().direction;
+	float& dragMagnitude = test_bro.GetComponent<SlingMotion>().magnitude;
+	vec3& test_broMotion = test_bro.GetComponent<Motion>().velocity;
+
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		if (abs(dispVecFromTestBro.x) < 100 && abs(dispVecFromTestBro.y) < 100)
+		{
+			isBroClicked = true;
+		}
+
+	}
+	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && isBroClicked)
+	{
+		isBroClicked = false;
+		dragDir = testBroPosScreenSpace - mouse_pos;
+		dragMagnitude = sqrt(dragDir.x * dragDir.x + dragDir.y * dragDir.y);
+		test_broMotion = vec3(dragMagnitude * 2 * dragDir, 0.0) / 1000.f;
+		std::cout << "vel: " << test_broMotion.x << " " << test_broMotion.y << std::endl;
+		// TODO: Set max velocity for bro
+		test_bro.GetComponent<Motion>().velocity = glm::vec3(test_broMotion.x, test_broMotion.y, 0.0f);
 	}
 }
 
+
 void WorldSystem::HandlePlayerMovement(float deltaTime)
 {
-	// Move salmon if alive
+	// Move slingbro if alive
 	//if (!ECS::registry<DeathTimer>.has(player_salmon))
 	// tiny_ecs way above, EnTT below:
-	if (!player_salmon.HasComponent<DeathTimer>())
+	if (!test_bro.HasComponent<DeathTimer>())
 	{
-		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		// TODO A1: HANDLE SALMON MOVEMENT HERE
-		// key is of 'type' GLFW_KEY_
-		// action can be GLFW_PRESS GLFW_RELEASE GLFW_REPEAT
-		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		//auto& salmonMotionComponent = ECS::registry<Motion>.get(player_salmon);
-		// tiny_ecs way above, EnTT below:
-		auto& salmonMotionComponent = player_salmon.GetComponent<Motion>();
-
-		float playerFishMaxSpeed = 250.0f;
-		float playerFishAcceleration = 50.0f;
-		float momentumSlowdownFactor = 0.4f; // lower for more fish momentum
-
-		// WASD keys
-		if (IsKeyPressed(GLFW_KEY_W))
-			if (salmonMotionComponent.velocity.y > -playerFishMaxSpeed)
-				salmonMotionComponent.velocity.y -= playerFishAcceleration * deltaTime / 100.0f;
-		if (IsKeyPressed(GLFW_KEY_S))
-			if (salmonMotionComponent.velocity.y < playerFishMaxSpeed)
-				salmonMotionComponent.velocity.y += playerFishAcceleration * deltaTime / 100.0f;
-		if (IsKeyPressed(GLFW_KEY_A))
-			if (salmonMotionComponent.velocity.x > -playerFishMaxSpeed)
-				salmonMotionComponent.velocity.x -= playerFishAcceleration * deltaTime / 100.0f;
-		if (IsKeyPressed(GLFW_KEY_D))
-			if (salmonMotionComponent.velocity.x < playerFishMaxSpeed)
-				salmonMotionComponent.velocity.x += playerFishAcceleration * deltaTime / 100.0f;
-		// Key raised handling
-		if (!IsKeyPressed(GLFW_KEY_W) && !IsKeyPressed(GLFW_KEY_S))
-			salmonMotionComponent.velocity.y *= min((deltaTime / momentumSlowdownFactor), 0.999f);
-		if (!IsKeyPressed(GLFW_KEY_A) && !IsKeyPressed(GLFW_KEY_D))
-			salmonMotionComponent.velocity.x *= min((deltaTime / momentumSlowdownFactor), 0.999f);
-
-		// Arrow keys
-		if (IsKeyPressed(GLFW_KEY_UP))
-			if (salmonMotionComponent.velocity.y > -playerFishMaxSpeed)
-				salmonMotionComponent.velocity.y -= playerFishAcceleration * deltaTime / 100.0f;
-		if (IsKeyPressed(GLFW_KEY_DOWN))
-			if (salmonMotionComponent.velocity.y < playerFishMaxSpeed)
-				salmonMotionComponent.velocity.y += playerFishAcceleration * deltaTime / 100.0f;
-		if (IsKeyPressed(GLFW_KEY_LEFT))
-			if (salmonMotionComponent.velocity.x > -playerFishMaxSpeed)
-				salmonMotionComponent.velocity.x -= playerFishAcceleration * deltaTime / 100.0f;
-		if (IsKeyPressed(GLFW_KEY_RIGHT))
-			if (salmonMotionComponent.velocity.x < playerFishMaxSpeed)
-				salmonMotionComponent.velocity.x += playerFishAcceleration * deltaTime / 100.0f;
-		// Key raised handling
-		if (!IsKeyPressed(GLFW_KEY_UP) && !IsKeyPressed(GLFW_KEY_DOWN))
-			salmonMotionComponent.velocity.y *= min((deltaTime / (deltaTime + momentumSlowdownFactor)), 0.999f);
-		if (!IsKeyPressed(GLFW_KEY_RIGHT) && !IsKeyPressed(GLFW_KEY_RIGHT))
-			salmonMotionComponent.velocity.x *= min((deltaTime / (deltaTime + momentumSlowdownFactor)), 0.999f);
-
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		printf("Ain't nothin yet\n");
 	}
 }
 
 void WorldSystem::HandleCameraMovement(Camera* camera, float deltaTime)
 {
 	glm::vec3 cameraPosition = camera->GetPosition();
-
 	float cameraSpeed = 80.0f;
 
 	// WASD keys
@@ -439,5 +457,22 @@ void WorldSystem::HandleCameraMovement(Camera* camera, float deltaTime)
 	if (IsKeyPressed(GLFW_KEY_D))
 		cameraPosition.x += cameraSpeed * deltaTime / 100.0f;
 
+	// Q and E keys to control camera's Z rotation
+	float cameraRotationZ = camera->GetRotationZ();
+	float cameraRotationSpeed = 4.2f;
+
+	if (IsKeyPressed(GLFW_KEY_Q))
+		cameraRotationZ -= cameraRotationSpeed * deltaTime / 100.0f;
+	if (IsKeyPressed(GLFW_KEY_E))
+		cameraRotationZ += cameraRotationSpeed * deltaTime / 100.0f;
+
 	camera->SetPosition(cameraPosition);
+	camera->SetRotationZ(cameraRotationZ);
+
+	// Testing 3D perspective
+	// Press T and G to move the test_bro along z axis
+	if (IsKeyPressed(GLFW_KEY_T))
+		test_bro.GetComponent<Motion>().position.z -= 10.0f * deltaTime / 100.0f;
+	if (IsKeyPressed(GLFW_KEY_G))
+		test_bro.GetComponent<Motion>().position.z += 10.0f * deltaTime / 100.0f;
 }
