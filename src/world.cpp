@@ -278,7 +278,6 @@ void WorldSystem::restart() // notes: like Game::init
 void WorldSystem::collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, bool hit_wall)
 {
 	if (!hit_wall && entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<Projectile>()) {
-
 		++points;
 		GameScene->m_Registry.destroy(entity_j);
 	}
