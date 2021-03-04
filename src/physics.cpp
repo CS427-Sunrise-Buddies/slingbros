@@ -12,21 +12,108 @@ vec2 get_bounding_box(const Motion& motion)
 	return { abs(motion.scale.x), abs(motion.scale.y) };
 }
 
-// This is a SUPER APPROXIMATE check that puts a circle around the bounding boxes and sees
-// if the center point of either object is inside the other's bounding-box-circle. You don't
-// need to try to use this technique.
-bool collides(const Motion& motion1, const Motion& motion2)
+
+bool aabb_collision(Motion& motion_i, Motion& motion_j)
 {
-	auto dp = motion1.position - motion2.position;
-	float dist_squared = dot(dp, dp);
-	float other_r = std::sqrt(
-			std::pow(get_bounding_box(motion1).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion1).y / 2.0f, 2.f));
-	float my_r = std::sqrt(
-			std::pow(get_bounding_box(motion2).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion2).y / 2.0f, 2.f));
-	float r = max(other_r, my_r);
-	if (dist_squared < r * r)
-		return true;
+	vec2 dOne = { abs(motion_i.scale.x) / 2, abs(motion_i.scale.y) / 2 };
+	vec2 dTwo = { abs(motion_j.scale.x) / 2, abs(motion_j.scale.y) / 2 };
+	bool collisionX = motion_i.position.x + dOne.x >= motion_j.position.x - dTwo.x &&
+					  motion_j.position.x + dTwo.x >= motion_i.position.x - dOne.x;
+	bool collisionY = motion_i.position.y + dOne.y >= motion_j.position.y - dTwo.y &&
+					  motion_j.position.y + dTwo.y >= motion_i.position.y - dOne.y;
+	return collisionX && collisionY;
+}
+
+
+MaxMin findMinMaxFromMesh(ECS_ENTT::Entity entity, vec2 window_size_in_game_units, bool isDebug)
+{
+	auto motion = entity.GetComponent<Motion>();
+	auto shadedMesh = entity.GetComponent<ShadedMeshRef>();
+	MaxMin boundingCoords{};
+	boundingCoords.xMax = 0;
+	boundingCoords.xMin = window_size_in_game_units.x;
+	boundingCoords.yMax = 0;
+	boundingCoords.yMin = window_size_in_game_units.y;
+
+	for (ColoredVertex v : shadedMesh.reference_to_cache->mesh.vertices)
+	{
+		Transform transform;
+		transform.translate(motion.position);
+		transform.rotate(motion.angle, glm::vec3(0.0f, 0.0f, 1.0f));
+		transform.scale(motion.scale);
+		vec4 pos = { v.position.x, v.position.y, v.position.z, 1 };
+//		v.position.z = 1.f;
+		vec4 transformed_v = transform.matrix * vec4(v.position, 1);
+		if (transformed_v.x > boundingCoords.xMax)
+		{
+			boundingCoords.xMax = transformed_v.x;
+		}
+		if (transformed_v.x < boundingCoords.xMin)
+		{
+			boundingCoords.xMin = transformed_v.x;
+		}
+		if (transformed_v.y > boundingCoords.yMax)
+		{
+			boundingCoords.yMax = transformed_v.y;
+		}
+		if (transformed_v.y < boundingCoords.yMin)
+		{
+			boundingCoords.yMin = transformed_v.y;
+		}
+//		if (isDebug)
+//		{
+//			vec2 scale_horizontal_line = {5, 5};
+//			DebugSystem::createLine({transformed_v.x, transformed_v.y}, scale_horizontal_line,
+//					0); // big dot
+//		}
+	}
+	if (boundingCoords.xMax == 0 &&
+		boundingCoords.xMin == window_size_in_game_units.x &&
+		boundingCoords.yMax == 0 &&
+		boundingCoords.yMin == window_size_in_game_units.y) // no mesh, use motion.scale only
+	{
+		vec2 dy = { 0, abs(motion.scale.y) / 2 };
+		vec2 dx = { abs(motion.scale.x) / 2, 0 };
+
+		boundingCoords.yMax = motion.position.y + dy.y;
+		boundingCoords.yMin = motion.position.y - dy.y;
+		boundingCoords.xMax = motion.position.x + dx.x;
+		boundingCoords.xMin = motion.position.x - dx.x;
+	}
+	return boundingCoords;
+}
+
+
+bool collides(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, vec2 window_size_in_game_units, bool isDebug)
+{
+
+	auto motion_i = entity_i.GetComponent<Motion>();
+	auto motion_j = entity_j.GetComponent<Motion>();
+
+
+	if (aabb_collision(motion_i, motion_j))
+	{
+		// check exact vertices
+		MaxMin boundingCoords_i = findMinMaxFromMesh(entity_i, window_size_in_game_units, isDebug);
+		MaxMin boundingCoords_j = findMinMaxFromMesh(entity_j, window_size_in_game_units, isDebug);
+		bool x_axis_collision = boundingCoords_i.xMax >= boundingCoords_j.xMin &&
+								boundingCoords_j.xMax >= boundingCoords_i.xMin;
+		bool y_axis_collision = boundingCoords_i.yMax >= boundingCoords_j.yMin &&
+								boundingCoords_j.yMax >= boundingCoords_i.yMin;
+		return x_axis_collision && y_axis_collision;
+
+	}
 	return false;
+//	auto dp = motion1.position - motion2.position;
+//	float dist_squared = dot(dp, dp);
+//	float other_r = std::sqrt(
+//			std::pow(get_bounding_box(motion1).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion1).y / 2.0f, 2.f));
+//	float my_r = std::sqrt(
+//			std::pow(get_bounding_box(motion2).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion2).y / 2.0f, 2.f));
+//	float r = max(other_r, my_r);
+//	if (dist_squared < r * r)
+//		return true;
+//	return false;
 }
 
 bool check_wall_collisions(Motion m)
@@ -111,19 +198,19 @@ vec3 circle_rect_distance(Motion& circle, Motion& square, ECS_ENTT::Entity circl
 
 	return closest_point_to_circle_on_square - circle.position;
 
-////		if (circle_entity.HasComponent<Projectile>())
-////		{
-////			std::cout << "circle.position.x " << circle.position.x << std::endl;
-////			std::cout << "circle.position.y " << circle.position.y << std::endl;
-////
-////			std::cout << "circle.scale.x " << circle.scale.x << std::endl;
-////			std::cout << "circle.scale.y " << circle.scale.y << std::endl;
-////			std::cout << "square.scale.x " << square.scale.x << std::endl;
-////			std::cout << "square.scale.y " << square.scale.y << std::endl;
-////
-////			std::cout << "square.position.x " << square.position.x << std::endl;
-////			std::cout << "square.position.y " << square.position.y << std::endl;
-////		}
+//		if (circle_entity.HasComponent<Projectile>())
+//		{
+//			std::cout << "circle.position.x " << circle.position.x << std::endl;
+//			std::cout << "circle.position.y " << circle.position.y << std::endl;
+//
+//			std::cout << "circle.scale.x " << circle.scale.x << std::endl;
+//			std::cout << "circle.scale.y " << circle.scale.y << std::endl;
+//			std::cout << "square.scale.x " << square.scale.x << std::endl;
+//			std::cout << "square.scale.y " << square.scale.y << std::endl;
+//
+//			std::cout << "square.position.x " << square.position.x << std::endl;
+//			std::cout << "square.position.y " << square.position.y << std::endl;
+//		}
 }
 
 
@@ -168,9 +255,9 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	}
 
 	// check for collisions between all entities
-	for (auto entityID : motionEntitiesView)
+	for (auto entityID_i : motionEntitiesView)
 	{
-		ECS_ENTT::Entity entity_i = ECS_ENTT::Entity(entityID, WorldSystem::GameScene);
+		ECS_ENTT::Entity entity_i = ECS_ENTT::Entity(entityID_i, WorldSystem::GameScene);
 		auto& motionComponent_i = entity_i.GetComponent<Motion>();
 
 		// First check if the entity is colliding with any of the scene bounds
@@ -233,10 +320,14 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 		}
 
 		// Next check if any two entities are colliding
-		for (auto entityID : motionEntitiesView)
+		for (auto entityID_j : motionEntitiesView)
 		{
-			ECS_ENTT::Entity entity_j = ECS_ENTT::Entity(entityID, WorldSystem::GameScene);
-			Motion& motionComponent_j = entity_j.GetComponent<Motion>();
+			ECS_ENTT::Entity entity_j = ECS_ENTT::Entity(entityID_j, WorldSystem::GameScene);
+			if (entity_j == entity_i)
+			{
+				continue;
+			}
+			auto& motionComponent_j = entity_j.GetComponent<Motion>();
 
 			//////////////////////////// Collision between x entity and Walls ////////////////////////////
 			// check for Wall Entity and other Object Entity collisions
@@ -283,14 +374,39 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 			}
 			//////////////////////////////////////////////////////////////////////////////
 
+//			if (entity_i.HasComponent<BasicEnemy>())
+//			{
+//				std::cout << "entity_i = Basic Enemy's position.x " << motionComponent_i.position.x << std::endl;
+//			}
+//			if (entity_j.HasComponent<BasicEnemy>())
+//			{
+//				std::cout << "entity_j = Basic Enemy's position.x " << motionComponent_i.position.x << std::endl;
+//			}
+//			if (entity_i.HasComponent<SlingBro>())
+//			{
+//				std::cout << "entity_i = SlingBro's position.x " << motionComponent_i.position.x << std::endl;
+//			}
+//			if (entity_j.HasComponent<SlingBro>())
+//			{
+//				std::cout << "entity_j = SlingBro's position.x " << motionComponent_i.position.x << std::endl;
+//			}
+//			if (entity_i.HasComponent<Projectile>())
+//			{
+//				std::cout << "entity_i = Projectile's position.x " << motionComponent_i.position.x << std::endl;
+//			}
+//			if (entity_j.HasComponent<Projectile>())
+//			{
+//				std::cout << "entity_j = Projectile's position.x " << motionComponent_i.position.x << std::endl;
+//			}
 			// Check that the entities aren't the same, aren't both walls, and that they collide
 			if (entity_i != entity_j && !entity_i.HasComponent<Wall>() &&
 				!entity_j.HasComponent<Wall>() &&
-				collides(motionComponent_i, motionComponent_j))
+				collides(entity_i, entity_j, window_size_in_game_units, DebugSystem::in_debug_mode))
 			{
-				if (entity_i.HasComponent<BasicEnemy>() && entity_j.HasComponent<SlingBro>())
+
+				if (entity_i.HasComponent<BasicEnemy>() || entity_j.HasComponent<BasicEnemy>())
 				{
-//					std::cout << "Enemy's position.x " << motionComponent_i.position.x << std::endl;
+					std::cout << "Enemy's position.x " << motionComponent_i.position.x << std::endl;
 //					std::cout << "Enemy's position.y " << motionComponent_i.position.y << std::endl;
 //					std::cout << "Enemy's position.z " << motionComponent_i.position.z << std::endl;
 

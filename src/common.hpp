@@ -67,3 +67,10 @@ struct Gravity
 {
 	float gravitational_constant = 1000.0f;
 };
+
+struct MaxMin {
+	float xMax;
+	float xMin;
+	float yMax;
+	float yMin;
+};
