@@ -231,15 +231,12 @@ void WorldSystem::restart() // notes: like Game::init
 	RemoveAllEntitiesWithComponent<Wall>();
 
 	// Create a new bro
-	test_bro = SlingBro::createSlingBro({ 500, 300, 1 }, GameScene);
-//	auto test_2 = SlingBro::createSlingBro({ 500, 400, 1 }, GameScene);
-
-
+	test_bro = SlingBro::createSlingBro({ 500, 300, 0 }, GameScene);
 	test_bro.AddComponent<Gravity>();
-	test_enemy = BasicEnemy::createBasicEnemy({ 200, 200, 1 }, GameScene);
+	test_enemy = BasicEnemy::createBasicEnemy({ 200, 200, 0 }, GameScene);
 
 	// temporary walls
-	float wall_displacement = -50;
+	float wall_displacement = 30;
 	for (int i = -wall_displacement; i < GameScene->m_Size.x+wall_displacement; i += 100)
 	{
 		ECS_ENTT::Entity top = GroundTile::createGroundTile({ i, -wall_displacement, 0 }, GameScene); // top wall
@@ -254,8 +251,6 @@ void WorldSystem::restart() // notes: like Game::init
 		auto right = GroundTile::createGroundTile({ GameScene->m_Size.x+wall_displacement, i, 0 }, GameScene); // right wall
 		right.AddComponent<Wall>();
 	}
-	auto left = GroundTile::createGroundTile({ 300, 200, 0 }, GameScene); // left wall
-	left.AddComponent<Wall>();
 
 
 
@@ -341,7 +336,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 	}
 
 	// Debugging
-	if (key == GLFW_KEY_B)
+	if (key == GLFW_KEY_D)
 		DebugSystem::in_debug_mode = (action != GLFW_RELEASE);
 
 	// Control the current speed with `<` `>`
@@ -428,7 +423,7 @@ void WorldSystem::on_mouse_click(int button, int action, int mods)
 		isBroClicked = false;
 		dragDir = testBroPosScreenSpace - mouse_pos;
 		dragMagnitude = sqrt(dragDir.x * dragDir.x + dragDir.y * dragDir.y);
-		test_broMotion = vec3(dragMagnitude * 2 * dragDir.x,dragMagnitude * 4 * dragDir.x, 0.0) / 1000.f;
+		test_broMotion = vec3(dragMagnitude * 2 * dragDir, 0.0) / 1000.f;
 		std::cout << "vel: " << test_broMotion.x << " " << test_broMotion.y << std::endl;
 		// TODO: Set max velocity for bro
 		test_bro.GetComponent<Motion>().velocity = glm::vec3(test_broMotion.x, test_broMotion.y, 0.0f);
@@ -480,6 +475,4 @@ void WorldSystem::HandleCameraMovement(Camera* camera, float deltaTime)
 		test_bro.GetComponent<Motion>().position.z -= 10.0f * deltaTime / 100.0f;
 	if (IsKeyPressed(GLFW_KEY_G))
 		test_bro.GetComponent<Motion>().position.z += 10.0f * deltaTime / 100.0f;
-	if (IsKeyPressed(GLFW_KEY_V))
-		DebugSystem::is_gravity_on = !DebugSystem::is_gravity_on;
 }

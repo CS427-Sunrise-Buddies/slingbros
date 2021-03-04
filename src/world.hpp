@@ -71,9 +71,6 @@ public:
 	// OpenGL window handle
 	GLFWwindow* window;
 
-	ECS_ENTT::Entity test_enemy; // todo: place back into private once done debugging
-
-
 private:
 	// Input callback functions
 	void on_key(int key, int, int action, int mod);
@@ -98,7 +95,7 @@ private:
 	// Game state
 	float current_speed;
 	ECS_ENTT::Entity test_bro;
-
+	ECS_ENTT::Entity test_enemy;
 
 	// music references
 	Mix_Music* background_music;
