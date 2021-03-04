@@ -418,7 +418,7 @@ void WorldSystem::on_mouse_click(int button, int action, int mods)
 
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 	{
-		if (abs(dispVecFromTestBro.x) < testBroMotionComponent.scale.x && abs(dispVecFromTestBro.y) < testBroMotionComponent.scale.y)
+		if (abs(dispVecFromTestBro.x) < 100 && abs(dispVecFromTestBro.y) < 100)
 		{
 			isBroClicked = true;
 		}
@@ -429,13 +429,9 @@ void WorldSystem::on_mouse_click(int button, int action, int mods)
 		isBroClicked = false;
 		dragDir = testBroPosScreenSpace - mouse_pos;
 		dragMagnitude = sqrt(dragDir.x * dragDir.x + dragDir.y * dragDir.y);
-		test_broMotion = vec3(dragMagnitude * 2 * dragDir.x,dragMagnitude * 10 * dragDir.y, 0.0) / 1000.f;
+		test_broMotion = vec3(dragMagnitude * 2 * dragDir.x,dragMagnitude * 4 * dragDir.x, 0.0) / 1000.f;
 		std::cout << "vel: " << test_broMotion.x << " " << test_broMotion.y << std::endl;
-
-		// setting max speed for the bro, maybe load the velocities when we have the level loader
-		test_broMotion.x = clip(test_broMotion.x, -1000.f, 1000.f);
-		test_broMotion.y = clip(test_broMotion.y, -1000.f, 1000.f);
-
+		// TODO: Set max velocity for bro
 		test_bro.GetComponent<Motion>().velocity = glm::vec3(test_broMotion.x, test_broMotion.y, 0.0f);
 	}
 }
