@@ -29,6 +29,10 @@ inline std::string textures_path(const std::string& name) { return data_path() +
 inline std::string audio_path(const std::string& name) { return data_path() + "/audio/" + name; };
 inline std::string mesh_path(const std::string& name) { return data_path() + "/meshes/" + name; };
 
+// make sure n is between lower and upper bounds
+float clip(float n, float lower, float upper);
+
+
 // The 'Transform' component handles transformations passed to the Vertex shader
 // (similar to the gl Immediate mode equivalent, e.g., glTranslate()...)
 struct Transform {
