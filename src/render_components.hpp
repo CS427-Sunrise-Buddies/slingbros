@@ -136,6 +136,7 @@ struct ShadedMeshRef
 struct DebugComponent
 {
 	// Note, an empty struct has size 1
+	int placeholder = 0; // todo: why cant this struct be empty?
 };
 
 // A timer that will be associated to dying salmon

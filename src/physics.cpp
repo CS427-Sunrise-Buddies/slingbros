@@ -19,8 +19,10 @@ bool collides(const Motion& motion1, const Motion& motion2)
 {
 	auto dp = motion1.position - motion2.position;
 	float dist_squared = dot(dp, dp);
-	float other_r = std::sqrt(std::pow(get_bounding_box(motion1).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion1).y / 2.0f, 2.f));
-	float my_r = std::sqrt(std::pow(get_bounding_box(motion2).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion2).y / 2.0f, 2.f));
+	float other_r = std::sqrt(
+			std::pow(get_bounding_box(motion1).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion1).y / 2.0f, 2.f));
+	float my_r = std::sqrt(
+			std::pow(get_bounding_box(motion2).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion2).y / 2.0f, 2.f));
 	float r = max(other_r, my_r);
 	if (dist_squared < r * r)
 		return true;
@@ -36,7 +38,8 @@ bool check_wall_collisions(Motion m)
 						  + pow(bounding_box.y / 2.0f, 2.f));
 	vec2 scene_size = WorldSystem::GameScene->m_Size;
 
-	return xpos - radius_i < 0.f || xpos + radius_i > scene_size.x || ypos - radius_i < 0.f || ypos + radius_i > scene_size.y;
+	return xpos - radius_i < 0.f || xpos + radius_i > scene_size.x || ypos - radius_i < 0.f ||
+		   ypos + radius_i > scene_size.y;
 }
 
 void reflect_and_add_friction_to_entity(float& velocity, float friction)
@@ -45,6 +48,85 @@ void reflect_and_add_friction_to_entity(float& velocity, float friction)
 	velocity -= velocity * friction;
 }
 
+bool intersects(Motion circle, Motion rect)
+{
+	vec2 circleDistance;
+	circleDistance.x = abs(circle.position.x - rect.position.x);
+	circleDistance.y = abs(circle.position.y - rect.position.y);
+
+	if (circleDistance.x > (rect.scale.x / 2 + circle.scale.x))
+	{ return false; }
+	if (circleDistance.y > (rect.scale.y / 2 + circle.scale.x))
+	{ return false; }
+
+	if (circleDistance.x <= (rect.scale.x / 2))
+	{ return true; }
+	if (circleDistance.y <= (rect.scale.y / 2))
+	{ return true; }
+
+	float cornerDistance_sq = (circleDistance.x - rect.scale.x / 2) * (circleDistance.x - rect.scale.x / 2) +
+							  (circleDistance.y - rect.scale.y / 2) * (circleDistance.y - rect.scale.y / 2);
+
+	return (cornerDistance_sq <= (circle.scale.x * circle.scale.x));
+}
+
+// get the direction of a vector. note: vector is in 2d
+VectorDir vector_dir(vec2 v)
+{
+	// up down left right since square only has 4 sides.
+	vec2 directions[] = {
+			vec2(0.0f, 1.0f),
+			vec2(0.0f, -1.0f),
+			vec2(-1.0f, 0.0f),
+			vec2(1.0f, 0.0f),
+	};
+	int dir_index = 0; // corresponding to VectorDir
+	float highest_dot_product = 0.f; // max 1.f, when the angle is 0 degrees
+
+	for (int i = 0; i < 4; i++)
+	{
+		// dot product to find the angle between the directions vector and the vector in question
+		float dot_prod = glm::dot(glm::normalize(v), directions[i]);
+		if (dot_prod > highest_dot_product)
+		{
+			highest_dot_product = dot_prod; // we want the angle to be as small as possible
+			dir_index = i;
+		}
+	}
+	return (VectorDir)dir_index;
+}
+
+bool is_circle_rect_collision(vec3 circle_center_to_closest_point_on_square, Motion& circle)
+{
+	return glm::length(circle_center_to_closest_point_on_square) < (circle.scale.x / 2);
+}
+
+vec3 circle_rect_distance(Motion& circle, Motion& square, ECS_ENTT::Entity circle_entity)
+{
+	vec3 square_half = { square.scale.x / 2.0f, square.scale.y / 2.0f, 0 };
+	// distance between the circle center and the square center
+	vec3 center_to_center_vector = circle.position - square.position;
+	vec3 clamped_distance = glm::clamp(center_to_center_vector, -square_half, square_half);
+	vec3 closest_point_to_circle_on_square = square.position + clamped_distance;
+
+	return closest_point_to_circle_on_square - circle.position;
+
+////		if (circle_entity.HasComponent<Projectile>())
+////		{
+////			std::cout << "circle.position.x " << circle.position.x << std::endl;
+////			std::cout << "circle.position.y " << circle.position.y << std::endl;
+////
+////			std::cout << "circle.scale.x " << circle.scale.x << std::endl;
+////			std::cout << "circle.scale.y " << circle.scale.y << std::endl;
+////			std::cout << "square.scale.x " << square.scale.x << std::endl;
+////			std::cout << "square.scale.y " << square.scale.y << std::endl;
+////
+////			std::cout << "square.position.x " << square.position.x << std::endl;
+////			std::cout << "square.position.y " << square.position.y << std::endl;
+////		}
+}
+
+
 void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 {
 	// Move entities based on how much time has passed, this is to (partially) avoid
@@ -52,20 +134,44 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 
 	auto motionEntitiesView = WorldSystem::GameScene->m_Registry.view<Motion>(); // position
 
-	// Check for collisions between all moving entities
+	// update positions for all entities
 	for (auto entityID : motionEntitiesView)
 	{
 		ECS_ENTT::Entity entity_i = ECS_ENTT::Entity(entityID, WorldSystem::GameScene);
 		auto& motionComponent_i = entity_i.GetComponent<Motion>();
 
-		if (entity_i.HasComponent<Gravity>()) {
+		if (entity_i.HasComponent<Projectile>())
+		{
+//			std::cout << "Enemy's position.x " << motionComponent_i.scale.x << std::endl;
+//			std::cout << "Enemy's position.y " << motionComponent_i.scale.y << std::endl;
+//			std::cout << "Enemy's position.z " << motionComponent_i.scale.z << std::endl;
+
+//			std::cout << "j position.x " << motionComponent_j.position.x << std::endl;
+//			std::cout << "j position.y " << motionComponent_j.position.y << std::endl;
+//				std::cout << "j velocity.x " << motionComponent_j.velocity.x << std::endl;
+//				std::cout << "j velocity.y " << motionComponent_j.velocity.y << std::endl;
+		}
+
+		if (entity_i.HasComponent<Gravity>() && DebugSystem::is_gravity_on)
+		{
 			auto gravity = entity_i.GetComponent<Gravity>();
-			motionComponent_i.velocity.y += gravity.gravitational_constant * (elapsed_ms / 1000.0f); // gravity based on time passed
+			// gravity based on time passed
+			motionComponent_i.velocity.y += gravity.gravitational_constant * (elapsed_ms / 1000.0f);
+			// horizontal friction
+			motionComponent_i.velocity.x -= motionComponent_i.velocity.x * (elapsed_ms / 1000.0f) * 0.3;
 		}
 
 		float step_seconds = 1.0f * (elapsed_ms / 1000.f);
 
 		motionComponent_i.position += motionComponent_i.velocity * step_seconds;
+
+	}
+
+	// check for collisions between all entities
+	for (auto entityID : motionEntitiesView)
+	{
+		ECS_ENTT::Entity entity_i = ECS_ENTT::Entity(entityID, WorldSystem::GameScene);
+		auto& motionComponent_i = entity_i.GetComponent<Motion>();
 
 		// First check if the entity is colliding with any of the scene bounds
 		if (check_wall_collisions(motionComponent_i))
@@ -104,6 +210,27 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 
 			}
 		}
+		if (DebugSystem::in_debug_mode)
+		{
+//			auto shadedMesh = entity_i.GetComponent<ShadedMeshRef>();
+//
+//			for (ColoredVertex v : shadedMesh.reference_to_cache->mesh.vertices)
+//			{
+//				Transform transform;
+//				transform.translate(motionComponent_i.position);
+//				transform.rotate(motionComponent_i.angle, glm::vec3(0.0f, 0.0f, 1.0f));
+//				transform.scale(motionComponent_i.scale);
+//				v.position.z = 1.f;
+//				vec3 transformed_v = mat3(transform.matrix) * v.position;
+//				std::cout << "transformed.x " << transformed_v.x << std::endl;
+//				std::cout << "transformed.y " << transformed_v.y << std::endl;
+//				std::cout << "transformed.z " << transformed_v.z << std::endl;
+//
+//				vec3 scale_horizontal_line = { 5, 5, 1 };
+			DebugSystem::createLine({ 200, 400, 1 }, { 5, 5, 1 },
+					WorldSystem::GameScene); // big dot
+//			}
+		}
 
 		// Next check if any two entities are colliding
 		for (auto entityID : motionEntitiesView)
@@ -111,11 +238,88 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 			ECS_ENTT::Entity entity_j = ECS_ENTT::Entity(entityID, WorldSystem::GameScene);
 			Motion& motionComponent_j = entity_j.GetComponent<Motion>();
 
+			//////////////////////////// Collision between x entity and Walls ////////////////////////////
+			// check for Wall Entity and other Object Entity collisions
+			// for now, Walls are stationary to simplify things
+			if (!entity_i.HasComponent<Wall>() && entity_j.HasComponent<Wall>())
+			{
+				// entity_i is not a wall, entity_j is a wall.
+				// circle to square collisions
+				// todo: account for when the bro is at rest - no need to do anything below:
+				vec3 collision = circle_rect_distance(motionComponent_i, motionComponent_j, entity_i);
+				if (is_circle_rect_collision(collision, motionComponent_i))
+				{
+					float radius = motionComponent_i.scale.x / 2;
+					VectorDir direction_i = vector_dir(glm::vec2(collision));
+					if (direction_i >= VectorDir::LEFT) // left or right - need to move position.x
+					{
+						// flip direction and multiply some friction
+						motionComponent_i.velocity.x = -motionComponent_i.velocity.x * 0.9;
+						float move_out_distance = radius - std::abs(collision.x);
+						if (direction_i == LEFT)
+						{
+							motionComponent_i.position.x += move_out_distance;
+						}
+						else
+						{
+							motionComponent_i.position.x -= move_out_distance;
+						}
+					}
+					else if (direction_i <= VectorDir::DOWN) // up or down - need to move position.y
+					{
+						// flip direction and multiply some friction
+						motionComponent_i.velocity.y = -motionComponent_i.velocity.y * 0.9;
+						float move_out_distance = radius - std::abs(collision.y);
+						if (direction_i == UP)
+						{
+							motionComponent_i.position.y -= move_out_distance;
+						}
+						else
+						{
+							motionComponent_i.position.y += move_out_distance;
+						}
+					}
+				}
+			}
+			//////////////////////////////////////////////////////////////////////////////
+
 			// Check that the entities aren't the same, aren't both walls, and that they collide
 			if (entity_i != entity_j && !entity_i.HasComponent<Wall>() &&
-										!entity_j.HasComponent<Wall>() &&
-										collides(motionComponent_i, motionComponent_j))
+				!entity_j.HasComponent<Wall>() &&
+				collides(motionComponent_i, motionComponent_j))
 			{
+				if (entity_i.HasComponent<BasicEnemy>() && entity_j.HasComponent<SlingBro>())
+				{
+//					std::cout << "Enemy's position.x " << motionComponent_i.position.x << std::endl;
+//					std::cout << "Enemy's position.y " << motionComponent_i.position.y << std::endl;
+//					std::cout << "Enemy's position.z " << motionComponent_i.position.z << std::endl;
+
+//			std::cout << "j position.x " << motionComponent_j.position.x << std::endl;
+//			std::cout << "j position.y " << motionComponent_j.position.y << std::endl;
+//				std::cout << "j velocity.x " << motionComponent_j.velocity.x << std::endl;
+//				std::cout << "j velocity.y " << motionComponent_j.velocity.y << std::endl;
+				}
+//				vec2 pob absolute_i = { std::abs(diff_i.x), std::abs(diff_i.y) };
+
+//				velocity2D_i = velocity2D_i -
+//											 ((velocity2D_i - velocity2D_j) *
+//											  (position2D_i - position2D_j)) /
+//											 (absolute_i * absolute_i) *
+//											 (position2D_i - position2D_j);
+//				motionComponent_i.velocity = { velocity2D_i.x, velocity2D_i.y, 0 };
+//
+//				vec2 diff_j = position2D_j - position2D_i;
+//				vec2 absolute_j = { std::abs(diff_j.x), std::abs(diff_j.y) };
+//
+//				velocity2D_j = velocity2D_j -
+//											 ((velocity2D_j - velocity2D_i) *
+//											  (position2D_j - position2D_i)) /
+//											 (absolute_j * absolute_j) *
+//											 (position2D_j - position2D_i);
+//				motionComponent_j.velocity = { velocity2D_j.x, velocity2D_j.y, 0 };
+
+//				motionComponent_i.velocity.z = 0;
+//				motionComponent_j.velocity.z = 0;
 				// Create a collision event - notify observers
 				runCollisionCallbacks(entity_i, entity_j, false);
 			}
@@ -127,21 +331,21 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	(void)window_size_in_game_units;
 
 	// Visualization for debugging the position and scale of objects
-	if (DebugSystem::in_debug_mode)
-	{
-		for (auto& motion : motionEntitiesView)
-		{
-			auto& m = motionEntitiesView.get<Motion>(motion);
-
-			// draw a cross at the position of all objects
-			auto scale_horizontal_line = m.scale;
-			scale_horizontal_line.y *= 0.1f;
-			auto scale_vertical_line = m.scale;
-			scale_vertical_line.x *= 0.1f;
-			DebugSystem::createLine(m.position, scale_horizontal_line);
-			DebugSystem::createLine(m.position, scale_vertical_line);
-		}
-	}
+//	if (DebugSystem::in_debug_mode)
+//	{
+//		for (auto& motion : motionEntitiesView)
+//		{
+//			auto& m = motionEntitiesView.get<Motion>(motion);
+//
+//			// draw a cross at the position of all objects
+//			auto scale_horizontal_line = m.scale;
+//			scale_horizontal_line.y *= 0.1f;
+//			auto scale_vertical_line = m.scale;
+//			scale_vertical_line.x *= 0.1f;
+//			DebugSystem::createLine(m.position, scale_horizontal_line, WorldSystem::GameScene);
+//			DebugSystem::createLine(m.position, scale_vertical_line, WorldSystem::GameScene);
+//		}
+//	}
 }
 
 PhysicsSystem::Collision::Collision(ECS_ENTT::Entity& other)
