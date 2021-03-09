@@ -9,7 +9,7 @@ compete to win 🏆 the ultimate prize... street cred.
 ## Milestones
 
 - [02-22-21] Milestone 1: [`646553c`](https://github.students.cs.ubc.ca/CPSC427-2020W-T2/Team-11/commit/646553c6348b3a88ce9cca9a5fdd7acf8eae75d8)
-- [03-05-21] Milestone 2: 
+- [03-08-21] Milestone 2: [`c2bf6a4`](https://github.students.cs.ubc.ca/CPSC427-2020W-T2/Team-11/commit/c2bf6a4bb94f7fc5f667b18d5a85fda089c080b9)
 - [03-19-21] Milestone 3:
 - [04-09-21] Milestone 4:
 
