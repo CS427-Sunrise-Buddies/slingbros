@@ -22,6 +22,13 @@ public:
 		RecalculateProjectionMatrix();
 	}
 
+	float GetRotationY() const { return m_RotationY; }
+	void SetRotationY(float degrees)
+	{
+		m_RotationY = degrees;
+		RecalculateViewMatrix();
+	}
+
 	float GetRotationZ() const { return m_RotationZ; }
 	void SetRotationZ(float degrees)
 	{
@@ -104,20 +111,22 @@ private:
 
 	// Orthographic camera properties
 	float m_OrthoSize = 1000.0f;
-	float m_OrthoNear = -10.0f;
-	float m_OrthoFar = 10.0f;
+	float m_OrthoNear = -1000.0f;
+	float m_OrthoFar = 1000.0f;
 
 	// Perspective camera properties
 	float m_PerspectiveFOVy = glm::radians(45.0f);
 	float m_PerspectiveNear = 0.01f;
-	float m_PerspectiveFar = 100.0f;
+	float m_PerspectiveFar = 1000.0f;
 
 	float m_AspectRatio = 0.0f;
 	uint32_t m_ViewportWidth, m_ViewportHeight;
 
 	glm::mat4 m_ProjectionMatrix = glm::mat4(1); 
 
-	float m_RotationZ = 0; // units are in degrees
+	float m_RotationY = 0; // units are in degrees
+	float m_RotationZ = 0; 
+
 	glm::vec3 m_Position = glm::vec3(0, 0, 0);
 	glm::mat4 m_ViewMatrix = glm::mat4(1);
 

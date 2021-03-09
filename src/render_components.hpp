@@ -136,6 +136,9 @@ struct ShadedMeshRef
 struct DebugComponent
 {
 	// Note, an empty struct has size 1
+
+	// Bug fix for now, just adding something here so that this component isn't empty since apparently EnTT doesn't like empty components
+	uint32_t placeholder = 0;
 };
 
 // A timer that will be associated to dying salmon

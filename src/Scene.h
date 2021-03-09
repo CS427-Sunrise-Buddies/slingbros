@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <optional>
 #include "entt.hpp"
 
 #include <glm/vec2.hpp>
@@ -18,7 +19,7 @@ namespace ECS_ENTT
 	public:
 		Scene() = default;
 
-		explicit Scene(glm::vec2 size);
+		explicit Scene(std::string name, glm::vec2 size);
 
 		~Scene() = default;
 
@@ -29,9 +30,19 @@ namespace ECS_ENTT
 		void OnUpdate(float deltaTime);
 
 	public:
+		// Name of the scene
+		std::string m_Name;
+
 		// Registry to contain the component data and entity IDs
 		entt::registry m_Registry;
+
+		// Size of the scene
 		glm::vec2 m_Size;
+
+		// Grid of entity type keys for AI path finding
+		typedef std::vector<std::string> LevelRow;
+		typedef std::vector<LevelRow> LevelMap;
+		LevelMap m_Map;
 
 	private:
 		template<typename T>

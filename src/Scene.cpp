@@ -1,12 +1,19 @@
 #include "Scene.h"
+
+#include <utility>
 #include "Entity.h"
+#include "common.hpp"
 
 // TODO: still need a file which defines all the Component structs we will be using
 //#include "Components.h"
 
 namespace ECS_ENTT {
 
-	Scene::Scene(glm::vec2 size) : m_Size(size) {};
+	Scene::Scene(std::string name, glm::vec2 size) :
+		m_Name(std::move(name)),
+		m_Size(vec2(size.x * SPRITE_SCALE, size.y * SPRITE_SCALE)),
+		m_Map(LevelMap(size.y,LevelRow(size.x)))
+		{};
 
 	// Create an entity and associate it to this Scene
 	Entity Scene::CreateEntity(const std::string& name)

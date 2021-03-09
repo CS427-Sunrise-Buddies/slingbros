@@ -7,6 +7,11 @@
 #include <iostream>
 #include <fstream>
 
+const uint SPRITE_PIXEL_WIDTH = 32;
+const uint SPRITE_PIXEL_HEIGHT = 32;
+const uint SPRITESHEET_PIXEL_WIDTH = 256;
+const uint SPRITESHEET_PIXEL_HEIGHT = 256;
+
 // World initialization
 RenderSystem::RenderSystem(GLFWwindow& window) :
 	window(window)
@@ -39,7 +44,7 @@ RenderSystem::~RenderSystem()
 }
 
 // Create a new sprite and register it with ECS
-void RenderSystem::createSprite(ShadedMesh& sprite, std::string texture_path, std::string shader_name)
+void RenderSystem::createSprite(ShadedMesh& sprite, std::string texture_path, std::string shader_name, glm::vec2 spritesheetOffset)
 {
 	if (texture_path.length() > 0)
 		sprite.texture.load_from_file(texture_path.c_str());
@@ -50,10 +55,23 @@ void RenderSystem::createSprite(ShadedMesh& sprite, std::string texture_path, st
 	vertices[1].position = { +1.f/2, +1.f/2, 0.f };
 	vertices[2].position = { +1.f/2, -1.f/2, 0.f };
 	vertices[3].position = { -1.f/2, -1.f/2, 0.f };
-	vertices[0].texcoord = { 0.f, 1.f };
-	vertices[1].texcoord = { 1.f, 1.f };
-	vertices[2].texcoord = { 1.f, 0.f };
-	vertices[3].texcoord = { 0.f, 0.f };
+
+	// Check if the spritesheet offset has been changed from default values
+	if (spritesheetOffset == glm::vec2(-1.0f, -1.0f))
+	{
+		vertices[0].texcoord = { 0.f, 1.f };
+		vertices[1].texcoord = { 1.f, 1.f };
+		vertices[2].texcoord = { 1.f, 0.f };
+		vertices[3].texcoord = { 0.f, 0.f };
+	}
+	else
+	{
+		// Spritesheet offset has been defined -- use that to calculate texture coordinates that should be passed to the shader
+		vertices[0].texcoord = { (SPRITE_PIXEL_WIDTH * spritesheetOffset.x) / SPRITESHEET_PIXEL_WIDTH, (SPRITE_PIXEL_HEIGHT * spritesheetOffset.y + SPRITE_PIXEL_HEIGHT) / SPRITESHEET_PIXEL_HEIGHT };
+		vertices[1].texcoord = { (SPRITE_PIXEL_WIDTH * spritesheetOffset.x + SPRITE_PIXEL_WIDTH) / SPRITESHEET_PIXEL_WIDTH, (SPRITE_PIXEL_HEIGHT * spritesheetOffset.y + SPRITE_PIXEL_HEIGHT) / SPRITESHEET_PIXEL_HEIGHT };
+		vertices[2].texcoord = { (SPRITE_PIXEL_WIDTH * spritesheetOffset.x + SPRITE_PIXEL_WIDTH) / SPRITESHEET_PIXEL_WIDTH, (SPRITE_PIXEL_HEIGHT * spritesheetOffset.y) / SPRITESHEET_PIXEL_HEIGHT };
+		vertices[3].texcoord = { (SPRITE_PIXEL_WIDTH * spritesheetOffset.x) / SPRITESHEET_PIXEL_WIDTH, (SPRITE_PIXEL_HEIGHT * spritesheetOffset.y) / SPRITESHEET_PIXEL_HEIGHT };
+	}
 
 	// Counterclockwise as it's the default opengl front winding direction.
 	uint16_t indices[] = { 0, 3, 1, 1, 3, 2 };
@@ -116,6 +134,4 @@ void RenderSystem::initScreenTexture()
 
 	// Initialize the screen texture and its state
 	screen_sprite.texture.create_from_screen(&window, depth_render_buffer_id.data());
-	screen_state_entity = WorldSystem::GameScene->CreateEntity("Screen State Entity"); // TODO might want to have this entity be in another scene?
-	screen_state_entity.AddComponent<ScreenState>();
 }

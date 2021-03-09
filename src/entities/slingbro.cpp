@@ -1,5 +1,6 @@
 #include "slingbro.hpp"
 #include "render.hpp"
+#include "animation.hpp"
 
 ECS_ENTT::Entity SlingBro::createSlingBro(vec3 position, ECS_ENTT::Scene* scene) {
 
@@ -9,7 +10,7 @@ ECS_ENTT::Entity SlingBro::createSlingBro(vec3 position, ECS_ENTT::Scene* scene)
 	ShadedMesh& resource = cache_resource(key);
 
 	if (resource.effect.program.resource == 0) {
-		RenderSystem::createSprite(resource, textures_path("test_bro.png"), "textured");
+		RenderSystem::createSprite(resource, textures_path("test_spritesheet.png"), "textured", { 0, 0 });
 	}
 
 	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache).
@@ -23,13 +24,17 @@ ECS_ENTT::Entity SlingBro::createSlingBro(vec3 position, ECS_ENTT::Scene* scene)
 	motionComponent.position = position;
 	motionComponent.angle = 0.0f;
 	motionComponent.velocity = { 0.0f, 0.0f, 0.0f };
-	motionComponent.scale = { resource.mesh.original_size.x * 100.f, resource.mesh.original_size.y * 100.f, 1.0f };
+	motionComponent.scale = { resource.mesh.original_size.x * SPRITE_SCALE, resource.mesh.original_size.y * SPRITE_SCALE, 1.0f };
 
 	slingBroEntity.AddComponent<SlingBro>();
 	SlingMotion& slingComponent = slingBroEntity.AddComponent<SlingMotion>();
 	slingComponent.isClicked = false;
 	slingComponent.direction = { 0.0f, 0.0f };
 	slingComponent.magnitude = 0.f;
+
+	// Set up the animation component
+	slingBroEntity.AddComponent<Animation>(key, textures_path("test_spritesheet.png"), glm::vec2(0, 0), 6, 200.0f);
+	slingBroEntity.AddComponent<Gravity>();
 
 	return slingBroEntity;
 }

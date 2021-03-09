@@ -15,10 +15,10 @@ void AttackInRange::init(ECS_ENTT::Entity e)
 
 BehaviorTree::State AttackInRange::process(ECS_ENTT::Entity e)
 {
-	auto slingBroView = WorldSystem::GameScene->m_Registry.view<SlingBro>();
+	auto slingBroView = WorldSystem::ActiveScene->m_Registry.view<SlingBro>();
 
 	for (auto slingBroEntityId : slingBroView) {
-		ECS_ENTT::Entity entity = ECS_ENTT::Entity(slingBroEntityId, WorldSystem::GameScene);
+		ECS_ENTT::Entity entity = ECS_ENTT::Entity(slingBroEntityId, WorldSystem::ActiveScene);
 		auto& slingBroMotion = entity.GetComponent<Motion>();
 		auto& motion = e.GetComponent<Motion>();
 
@@ -45,19 +45,19 @@ void ShootInRange::init(ECS_ENTT::Entity e)
 
 BehaviorTree::State ShootInRange::process(ECS_ENTT::Entity e)
 {
-	auto slingBroView = WorldSystem::GameScene->m_Registry.view<SlingBro>();
+	auto slingBroView = WorldSystem::ActiveScene->m_Registry.view<SlingBro>();
 
 	for (auto slingBroEntityId : slingBroView) {
-		ECS_ENTT::Entity entity = ECS_ENTT::Entity(slingBroEntityId, WorldSystem::GameScene);
+		ECS_ENTT::Entity entity = ECS_ENTT::Entity(slingBroEntityId, WorldSystem::ActiveScene);
 		auto& slingBroMotion = entity.GetComponent<Motion>();
 		auto& motion = e.GetComponent<Motion>();
 		double dist = distance(slingBroMotion.position, motion.position);
 
 		if (dist < threshold) {
-			if (WorldSystem::GameScene->m_Registry.view<Projectile>().size() < MAX_PROJECTILES) {
+			if (WorldSystem::ActiveScene->m_Registry.view<Projectile>().size() < MAX_PROJECTILES) {
 				// TODO: BROS-31 figure out what is causing slingBroMotion.position and motion.position to be corrupted when createProjectile(...) is called
 				vec3 displacement = slingBroMotion.position - motion.position;
-				ECS_ENTT::Entity projectile = Projectile::createProjectile(motion.position, WorldSystem::GameScene);
+				ECS_ENTT::Entity projectile = Projectile::createProjectile(motion.position, WorldSystem::ActiveScene);
 				auto& projectileMotion = projectile.GetComponent<Motion>();
 
 				projectileMotion.angle = atan2(displacement.y, displacement.x);

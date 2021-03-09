@@ -2,10 +2,6 @@
 
 // internal
 #include "common.hpp"
-#include "salmon.hpp"
-#include "entities/slingbro.hpp"
-#include "entities/basic_enemy.hpp"
-#include "entities/projectile.hpp"
 
 #include "Scene.h"
 #include "Entity.h"
@@ -16,21 +12,24 @@
 
 #define SDL_MAIN_HANDLED
 
-static const int GROUND_TILE_X_FLOOR_POS = 1010;
-static const int GROUND_TILE_Y_RIGHT_POS = 1010;
-
-
 #include <SDL.h>
 #include <SDL_mixer.h>
+
+static const float MAX_VELOCITY = 1000.f;
+
+static const unsigned int NUM_PLAYERS = 1;
 
 // Container for all our entities and game logic. Individual rendering / update is 
 // deferred to the relative update() methods
 class WorldSystem
 {
 public:
+	static ECS_ENTT::Scene* ActiveScene;
 	// Initialize the main scene (Scenes are essentially just entity containers)
 	static ECS_ENTT::Scene* GameScene;
+	static ECS_ENTT::Scene* MenuScene;
 
+	static ECS_ENTT::Scene* MenuInit(vec2 window_size_px);
 	// The active camera within the world
 	static Camera* ActiveCamera;
 
@@ -38,6 +37,9 @@ public:
 	{
 		return ActiveCamera;
 	}
+
+	static bool helpScreenToggle;
+
 
 public:
 
@@ -51,22 +53,22 @@ public:
 	void restart();
 
 	// Steps the game ahead by ms milliseconds
-	void step(float elapsed_ms, vec2 window_size_in_game_units);
+	ECS_ENTT::Scene* step(float elapsed_ms, vec2 window_size_in_game_units);
 
 	// Collision callback function
 	void collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, bool hit_wall);
-
-	// Check for collisions
-	void handle_collisions();
-
-	// Handle fish movement
-	void HandlePlayerMovement(float deltaTime);
 
 	// Handle camera movement
 	void HandleCameraMovement(Camera* camera, float deltaTime);
 
 	// Should the game be over ?
 	bool is_over() const;
+
+	static bool getIsLoadNextLevel();
+
+	void setIsLoadNextLevel(bool b);
+
+	static void load_next_level();
 
 	// OpenGL window handle
 	GLFWwindow* window;
@@ -85,17 +87,22 @@ private:
 	// Loads the audio
 	void init_audio();
 
+	static ECS_ENTT::Entity get_current_player();
+
+	static void load_level();
+
+	static void reload_level();
+
+	static bool file_exists(const std::string& file_path);
+
+	static void remove_all_entities();
+
 	template<typename ComponentType>
 	void RemoveAllEntitiesWithComponent();
 
 private:
 	// Number of fish eaten by the salmon, displayed in the window title
 	unsigned int points;
-
-	// Game state
-	float current_speed;
-	ECS_ENTT::Entity test_bro;
-	ECS_ENTT::Entity test_enemy;
 
 	// music references
 	Mix_Music* background_music;

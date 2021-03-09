@@ -26,3 +26,11 @@ public:
 
 	void getState();
 };
+
+enum VectorDir
+{
+	UP,
+	DOWN,
+	LEFT,
+	RIGHT
+};

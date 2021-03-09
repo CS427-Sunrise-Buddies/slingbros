@@ -4,6 +4,7 @@
 //#include "tiny_ecs.hpp"
 
 #include "world.hpp"
+#include "text.hpp"
 
 #include <iostream>
 
@@ -64,16 +65,9 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat4& view, c
 		glEnableVertexAttribArray(in_color_loc);
 		glVertexAttribPointer(in_color_loc, 3, GL_FLOAT, GL_FALSE, sizeof(ColoredVertex), reinterpret_cast<void*>(sizeof(vec3)));
 
-		// Light up?
-		// !!! TODO A1: check whether the entity has a LightUp component
-
-		//if (ECS::registry<LightUp>.has(entity))
 		if (entity.HasComponent<LightUp>())
 		{
 			GLint light_up_uloc = glGetUniformLocation(texmesh.effect.program, "light_up");
-			// !!! TODO A1: set the light_up shader variable using glUniform1i
-			// (void)light_up_uloc; // placeholder to silence unused warning until implemented
-			//auto& lightUpComponent = ECS::registry<LightUp>.get(entity);
 			auto& lightUpComponent = entity.GetComponent<LightUp>();
 			glUniform1i(light_up_uloc, (GLint)lightUpComponent.isLit);
 		}
@@ -145,11 +139,7 @@ void RenderSystem::drawToScreen()
 
 	// Set clock
 	GLuint time_uloc       = glGetUniformLocation(screen_sprite.effect.program, "time");
-	GLuint dead_timer_uloc = glGetUniformLocation(screen_sprite.effect.program, "darken_screen_factor");
 	glUniform1f(time_uloc, static_cast<float>(glfwGetTime() * 10.0f));
-	//auto& screen = ECS::registry<ScreenState>.get(screen_state_entity);
-	auto& screen = screen_state_entity.GetComponent<ScreenState>();
-	glUniform1f(dead_timer_uloc, screen.darken_screen_factor);
 	gl_has_errors();
 
 	// Set the vertex position and vertex texture coordinates (both stored in the same VBO)
@@ -197,7 +187,7 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 
 	// Draw all textured meshes that have a position and size component
 	// TODO we should probably be passing in a specific scene to this function as a parameter and then draw that scene
-	ECS_ENTT::Scene* scene = WorldSystem::GameScene;
+	ECS_ENTT::Scene* scene = WorldSystem::ActiveScene;
 	for (auto entityID : scene->m_Registry.view<ShadedMeshRef>())
 	{
 		ECS_ENTT::Entity entity{ entityID, scene };
@@ -208,6 +198,17 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 		gl_has_errors();
 	}
 
+	// Draw text components to the screen
+	// NOTE: for simplicity, text components are drawn in a second pass,
+	// on top of all texture mesh components. This should be reasonable
+	// for nearly all use cases. If you need text to appear behind meshes,
+	// consider using a depth buffer during rendering and adding a
+	// Z-component or depth index to all rendererable components.
+	for (auto entityID : scene->m_Registry.view<Text>()) {
+		const Text& text = scene->m_Registry.get<Text>(entityID);
+		drawText(text, frame_buffer_size);
+	}
+	
 	// Truely render to the screen
 	drawToScreen();
 
