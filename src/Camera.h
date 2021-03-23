@@ -101,6 +101,9 @@ public:
 		return m_ViewMatrix;
 	}
 
+	const bool IsFixed() const { return hasFixedParameters; }
+	void SetFixed(bool isFixed) { hasFixedParameters = isFixed; }
+
 private:
 	void RecalculateProjectionMatrix();
 	void RecalculateViewMatrix();
@@ -108,6 +111,8 @@ private:
 private:
 	// Defaults to an orthographic camera
 	ProjectionType m_ProjectionType = ProjectionType::Orthographic;
+
+	bool hasFixedParameters = false;
 
 	// Orthographic camera properties
 	float m_OrthoSize = 1000.0f;

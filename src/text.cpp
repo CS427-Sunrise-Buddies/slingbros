@@ -14,9 +14,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 /**
- * Credits to the 427 TAs
  * Helper function for checking FreeType errors
  */
+// Credits to the 427 TAs
 void FT_Check(FT_Error e) {
     if (e == 0) {
         // Not a problem
@@ -442,11 +442,14 @@ std::u32string utf8ToUtf32(const std::string& str) {
     return convert_t{}.from_bytes(str);
 }
 
-void drawText(const Text& text, glm::ivec2 frameBufferSize) {
+void drawText(const Text& text, glm::vec2 gameUnitSize) {
     assert(text.font);
 
     // The on-screen baseline origin of the current glyph being drawn
     auto cursor = text.position;
+
+    // invert y-axis to place origin at top-left corner for consistency
+    cursor.y = gameUnitSize.y - cursor.y;
 
     // Use the text shader
     assert(text.font->m_context);
@@ -459,9 +462,9 @@ void drawText(const Text& text, glm::ivec2 frameBufferSize) {
     // Orthographic projection matrix for placing text on-screen
     glm::mat4 projection = glm::ortho(
         0.0f,
-        static_cast<float>(frameBufferSize.x),
+        gameUnitSize.x,
         0.0f,
-        static_cast<float>(frameBufferSize.y)
+        gameUnitSize.y
     );
 
     // Pass the projection matrix uniform, see data/shaders/text.vs.glsl

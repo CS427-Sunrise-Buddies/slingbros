@@ -1,0 +1,12 @@
+# List the levels to load in order
+levels:
+  - Tutorial0
+  - Tutorial1
+  - Tutorial2
+  - Tutorial3
+  - LavaLevel
+  - StairLevel
+  - symmetry
+  - spiral
+  - HighUp
+  - danceforme

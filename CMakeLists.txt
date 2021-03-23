@@ -41,6 +41,8 @@ add_executable(
         "src/entities/ground_tile.cpp"
         "src/entities/grassy_tile.hpp"
         "src/entities/grassy_tile.cpp"
+        "src/entities/windy_grass.hpp"
+        "src/entities/windy_grass.cpp"
         "src/entities/lava_tile.hpp"
         "src/entities/lava_tile.cpp"
         "src/entities/start_tile.hpp"
@@ -66,12 +68,31 @@ add_executable(
         "src/loader/level_manager.cpp"
         "src/entities/button.hpp"
         "src/entities/button.cpp"
-	"src/entities/help_screen.hpp"
-	"src/entities/help_screen.cpp"
         src/ai/pathfinding.cpp
         src/ai/pathfinding.hpp
-	
-        )
+        "src/entities/parallax_background.hpp"
+        "src/entities/parallax_background.cpp"
+        "src/entities/size_up_powerup.hpp"
+        "src/entities/size_up_powerup.cpp"
+        "src/entities/size_down_powerup.hpp"
+        "src/entities/size_down_powerup.cpp"
+        "src/entities/sand_tile.hpp"
+        "src/entities/sand_tile.cpp"
+        "src/entities/glass_tile.hpp"
+        "src/entities/glass_tile.cpp"
+        "src/entities/hazard_tile_spike.hpp"
+        "src/entities/hazard_tile_spike.cpp"
+        "src/entities/bugdroid_enemy.hpp"
+        "src/entities/bugdroid_enemy.cpp"
+        "src/entities/bird_enemy.hpp"
+        "src/entities/bird_enemy.cpp"
+        "src/entities/blueb_enemy.hpp"
+        "src/entities/blueb_enemy.cpp"
+        "src/entities/dialogue_box.hpp"
+        "src/entities/dialogue_box.cpp"
+        "src/entities/screen.hpp"
+        "src/entities/screen.cpp"
+)
 target_include_directories(${PROJECT_NAME} PUBLIC src/)
 
 # Added this so policy CMP0065 doesn't scream
@@ -113,7 +134,6 @@ if (IS_OS_LINUX OR IS_OS_MAC)
     find_package(PkgConfig REQUIRED)
     
     pkg_search_module(GLFW REQUIRED glfw3)
-
     pkg_search_module(SDL2 REQUIRED sdl2)
     pkg_search_module(SDL2MIXER REQUIRED SDL2_mixer)
     pkg_search_module(FREETYPE REQUIRED freetype2)

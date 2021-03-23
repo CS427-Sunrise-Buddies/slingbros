@@ -10,9 +10,6 @@
 
 void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat4& view, const mat4& projection)
 {
-	//auto& motion = ECS::registry<Motion>.get(entity);
-	//auto& texmesh = *ECS::registry<ShadedMeshRef>.get(entity).reference_to_cache;
-	// tiny_ecs way above, EnTT way below:
 	auto& motion = entity.GetComponent<Motion>();
 	auto& texmesh = *entity.GetComponent<ShadedMeshRef>().reference_to_cache;
 
@@ -107,8 +104,63 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat4& view, c
 	glBindVertexArray(0);
 }
 
+void RenderSystem::drawParticle(Particle particle, ShadedMesh* particleMesh, const mat4& view, const mat4& projection)
+{
+	Transform transform;
+	transform.translate(particle.position);
+	transform.rotate(particle.rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+	transform.scale(glm::vec3(particle.currentSize, particle.currentSize, 1.0f));
+
+	// Setting shaders
+	glUseProgram(particleMesh->effect.program);
+	glBindVertexArray(particleMesh->mesh.vao);
+	gl_has_errors();
+
+	// Enabling alpha channel and depth test for textures
+	glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_DEPTH_TEST);
+	gl_has_errors();
+
+	GLint transform_uloc = glGetUniformLocation(particleMesh->effect.program, "transform");
+	GLint view_uloc = glGetUniformLocation(particleMesh->effect.program, "view"); 
+	GLint projection_uloc = glGetUniformLocation(particleMesh->effect.program, "projection");
+	gl_has_errors();
+
+	// Setting vertex and index buffers
+	glBindBuffer(GL_ARRAY_BUFFER, particleMesh->mesh.vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particleMesh->mesh.ibo);
+	gl_has_errors();
+
+	// Input data location as in the vertex buffer
+	GLint in_position_loc = glGetAttribLocation(particleMesh->effect.program, "in_position");
+	glEnableVertexAttribArray(in_position_loc);
+	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), reinterpret_cast<void*>(0));
+	gl_has_errors();
+
+	// Getting uniform locations for glUniform* calls
+	GLint color_uloc = glGetUniformLocation(particleMesh->effect.program, "fcolor");
+	glUniform4fv(color_uloc, 1, (float*)&particle.currentColour);
+	gl_has_errors();
+
+	// Get number of indices from index buffer, which has elements uint16_t
+	GLint size = 0;
+	glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	gl_has_errors();
+	GLsizei num_indices = size / sizeof(uint16_t);
+
+	// Setting uniform values to the currently bound program
+	glUniformMatrix4fv(transform_uloc, 1, GL_FALSE, (float*)&transform.matrix);
+	glUniformMatrix4fv(view_uloc, 1, GL_FALSE, (float*)&view);
+	glUniformMatrix4fv(projection_uloc, 1, GL_FALSE, (float*)&projection);
+	gl_has_errors();
+
+	// Drawing of num_indices/3 triangles specified in the index buffer
+	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);
+	glBindVertexArray(0);
+}
+
 // Draw the intermediate texture to the screen, with some distortion to simulate water
-void RenderSystem::drawToScreen() 
+void RenderSystem::drawToScreen()
 {
 	// Setting shaders
 	glUseProgram(screen_sprite.effect.program);
@@ -161,9 +213,81 @@ void RenderSystem::drawToScreen()
 	gl_has_errors();
 }
 
+void RenderSystem::drawParticlesInstanced(ParticleSystem* particleSystem, const mat4& view, const mat4& projection)
+{
+	int index = 0;
+	for (const Particle& particle : particleSystem->GetActiveParticles())
+	{
+		Transform transform;
+		// Set transform instance
+		transform.translate(particle.position);
+		transform.rotate(particle.rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+		transform.scale(glm::vec3(particle.currentSize, particle.currentSize, 1.0f));
+		transformMatrices[index] = transform.matrix;
+		// Set colour instance
+		particleColours[index] = particle.currentColour;
+		index++;
+	}
+
+	// Set all non-active instanced particles to be invisible
+	for (int i = index; i < MAX_NUM_PARTICLES; i++)
+		particleColours[i] = glm::vec4(0.0f);
+
+	auto particleMesh = particleSystem->GetParticleMeshInstanced();
+
+	// Bind shaders and VAO
+	glUseProgram(particleMesh->effect.program);
+	glBindVertexArray(particleMesh->mesh.vao);
+	gl_has_errors();
+
+	// Enabling alpha channel and depth test for textures
+	glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_DEPTH_TEST);
+	gl_has_errors();
+
+	// Instanced colour VBO
+	glBindBuffer(GL_ARRAY_BUFFER, instanced_colours_VBO);
+	size_t vec4_size = sizeof(glm::vec4);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, MAX_NUM_PARTICLES * vec4_size, &particleColours[0]);
+
+	// Instanced transform VBO
+	glBindBuffer(GL_ARRAY_BUFFER, instanced_transforms_VBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, MAX_NUM_PARTICLES * 4 * sizeof(vec4_size), &transformMatrices[0]);
+
+	GLint view_uloc = glGetUniformLocation(particleMesh->effect.program, "view");
+	GLint projection_uloc = glGetUniformLocation(particleMesh->effect.program, "projection");
+	gl_has_errors();
+
+	// Setting vertex and index buffers
+	glBindBuffer(GL_ARRAY_BUFFER, particleMesh->mesh.vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particleMesh->mesh.ibo);
+	gl_has_errors();
+
+	// Input data location as in the vertex buffer
+	GLint in_position_loc = glGetAttribLocation(particleMesh->effect.program, "in_position");
+	glEnableVertexAttribArray(in_position_loc);
+	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), reinterpret_cast<void*>(0));
+	gl_has_errors();
+
+	// Get number of indices from index buffer, which has elements uint16_t
+	GLint size = 0;
+	glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	gl_has_errors();
+	GLsizei num_indices = size / sizeof(uint16_t);
+
+	// Setting uniform values to the currently bound program
+	glUniformMatrix4fv(view_uloc, 1, GL_FALSE, (float*)&view);
+	glUniformMatrix4fv(projection_uloc, 1, GL_FALSE, (float*)&projection);
+	gl_has_errors();
+
+	// Drawing of num_indices/3 triangles specified in the index buffer
+	glDrawElementsInstanced(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, 0, MAX_NUM_PARTICLES);
+	glBindVertexArray(0);
+}
+
 // Render our game world
 // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/
-void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
+void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera, ParticleSystem* particleSystem)
 {
 	// Getting size of window
 	ivec2 frame_buffer_size; // in pixels
@@ -176,7 +300,7 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 	// Clearing backbuffer
 	glViewport(0, 0, frame_buffer_size.x, frame_buffer_size.y);
 	glDepthRange(0.00001, 10);
-	glClearColor(0.0f, 0.6f, 0.2f, 1.0);
+	glClearColor(176.f/255.f, 208.f/255.f, 211.f/255.f, 1.0);
 	glClearDepth(1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	gl_has_errors();
@@ -186,7 +310,6 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 	glm::mat4 projMatrix = activeCamera.GetProjectionMatrix(); 
 
 	// Draw all textured meshes that have a position and size component
-	// TODO we should probably be passing in a specific scene to this function as a parameter and then draw that scene
 	ECS_ENTT::Scene* scene = WorldSystem::ActiveScene;
 	for (auto entityID : scene->m_Registry.view<ShadedMeshRef>())
 	{
@@ -197,6 +320,19 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera)
 		drawTexturedMesh(entity, viewMatrix, projMatrix);
 		gl_has_errors();
 	}
+
+	// Draw all particles:
+	// Using instancing
+	drawParticlesInstanced(particleSystem, viewMatrix, projMatrix);
+	gl_has_errors();
+	// Using one draw call per particle
+	/*for (const Particle& particle : particleSystem->GetParticles())
+	{
+		if (!particle.active)
+			continue;
+		drawParticle(particle, particleSystem->GetParticleMesh(), viewMatrix, projMatrix);
+		gl_has_errors();
+	}*/
 
 	// Draw text components to the screen
 	// NOTE: for simplicity, text components are drawn in a second pass,

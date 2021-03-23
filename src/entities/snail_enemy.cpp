@@ -19,7 +19,7 @@ ECS_ENTT::Entity SnailEnemy::createSnailEnemy(vec3 position, ECS_ENTT::Scene* sc
 	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
 
 	Motion& motionComponent = snailEnemyEntity.AddComponent<Motion>();
-	motionComponent.position = position;
+	motionComponent.position = position - glm::vec3(0.0f, 0.0f, 2.0f);
 	motionComponent.angle = 0.0f;
 	motionComponent.velocity = { 0.0f, 0.0f, 0.0f };
 	motionComponent.scale = { resource.mesh.original_size.x * SPRITE_SCALE, resource.mesh.original_size.y * SPRITE_SCALE, 1.0f };

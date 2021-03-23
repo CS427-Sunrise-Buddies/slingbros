@@ -13,6 +13,14 @@ compete to win 🏆 the ultimate prize... street cred.
 - [03-19-21] Milestone 3:
 - [04-09-21] Milestone 4:
 
+## Set-up
+
+```
+git clone git@github.students.cs.ubc.ca:CPSC427-2020W-T2/Team-11.git
+git init submodule
+git submodule update
+```
+
 ## Members
 
 | Name           | Student Number |
@@ -23,3 +31,51 @@ compete to win 🏆 the ultimate prize... street cred.
 | Braedyn Kenzie | 47753158       |
 | Jack Griffiths | 19996157       |
 | Jason Xun      | 23091168       |
+
+
+## Credits:
+Music:
+
+[https://freesound.org/people/Topschool/sounds/443493/](https://freesound.org/people/Topschool/sounds/443493/)
+
+- happy-noises.wav
+
+[https://freesound.org/people/Setuniman/sounds/170914/](https://freesound.org/people/Setuniman/sounds/170914/)
+
+- happy_intro_music.wav
+
+[https://freesound.org/people/bolkmar/sounds/442327/](https://freesound.org/people/bolkmar/sounds/442327/)
+
+- poppin_click.wav
+
+[https://freesound.org/people/tim.kahn/sounds/128590/](https://freesound.org/people/jobro/sounds/104076/)
+
+- transport.wav
+
+[https://freesound.org/people/morganpurkis/sounds/396016/](https://freesound.org/people/morganpurkis/sounds/396016/)
+
+- short_grass.wav
+
+[https://freesound.org/people/zimbot/sounds/122126/](https://freesound.org/people/zimbot/sounds/122126/)
+
+- light_thud.wav
+
+[https://freesound.org/people/GameAudio/sounds/220173/](https://freesound.org/people/GameAudio/sounds/220173/)
+
+- power_up.wav
+
+[https://freesound.org/people/roboroo/sounds/436791/](https://freesound.org/people/roboroo/sounds/436791/)
+
+- sizzle.wav
+
+[https://freesound.org/people/Mrthenoronha/sounds/511385/](https://freesound.org/people/Mrthenoronha/sounds/511385/)
+
+- power_up_8bit.wav
+
+[https://freesound.org/people/pitx/sounds/16973/](https://freesound.org/people/pitx/sounds/16973/)
+
+- balloon_tap.wav
+
+[https://freesound.org/people/FoolBoyMedia/sounds/259174/](https://freesound.org/people/FoolBoyMedia/sounds/259174/)
+
+- squeak.wav

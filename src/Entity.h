@@ -17,6 +17,11 @@ namespace ECS_ENTT {
 		Entity(const Entity& otherEntity) = default;
 		~Entity() = default;
 
+		bool IsValid() const
+		{
+			return m_Scene->m_Registry.valid(m_EntityID);
+		}
+
 		template<typename T>
 		T& GetComponent()
 		{

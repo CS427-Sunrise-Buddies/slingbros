@@ -1,10 +1,11 @@
 // internal
-#include <entities/speed_powerup.hpp>
+#include "entities/speed_powerup.hpp"
 #include "physics.hpp"
 #include "debug.hpp"
 #include "world.hpp"
-#include <sstream>
 #include <iostream>
+
+static const float FRICTION = 0.1f;
 
 // up down left right since rectangle only has 4 sides.
 static const vec2 directions[] = {
@@ -49,10 +50,10 @@ bool check_wall_collisions(Motion m)
 		   ypos + radius_i > scene_size.y;
 }
 
-void reflect_and_add_friction_to_entity(float& velocity, float friction)
+void reflect_and_add_friction_to_entity(float& velocity)
 {
 	velocity *= -1;
-	velocity -= velocity * friction;
+	velocity -= velocity * FRICTION;
 }
 
 bool intersects(Motion circle, Motion rect)
@@ -77,40 +78,53 @@ bool intersects(Motion circle, Motion rect)
 	return (cornerDistance_sq <= (circle.scale.x * circle.scale.x));
 }
 
+
+vec2 get_clamped_distance(Motion& circle, Motion& rect){
+	// use vec2 because some entities could have z != 0.
+	vec2 half_rect = { rect.scale.x / 2.0f, rect.scale.y / 2.0f };
+	// distance between the circle center and the rect center
+	vec2 center_to_center_vector = circle.position - rect.position;
+	return glm::clamp(center_to_center_vector, -half_rect, half_rect);
+}
+
 // get the direction of a vector. note: vector is in 2d
-VectorDir vector_dir(vec2 v)
+VectorDir vector_dir(vec2 v, vec2 clamped, Motion& motionComponent)
 {
 	int dir_index = 0; // corresponding to VectorDir
 	float highest_dot_product = 0.f; // max 1.f, when the angle is 0 degrees
-
+	float dot_prod;
 	for (int i = 0; i < 4; i++)
 	{
 		// dot product to find the angle between the directions vector and the vector in question
-		float dot_prod = glm::dot(glm::normalize(v), directions[i]);
+		dot_prod = glm::dot(glm::normalize(v), directions[i]);
 		if (dot_prod > highest_dot_product)
 		{
 			highest_dot_product = dot_prod; // we want the angle to be as small as possible
 			dir_index = i;
 		}
 	}
+
+	// To fix infinite bouncing boi. clamped.y < 0 means that it is on top of a tile
+	if (clamped.x == clamped.y && clamped.y < 0 && dir_index == VectorDir::UP && abs(motionComponent.velocity.x) < 5.0f)
+	{
+		dir_index = clamped.x < 0 ? VectorDir::RIGHT : VectorDir::LEFT;
+	}
+
 	return (VectorDir)dir_index;
 }
 
-bool is_circle_rect_collision(vec3 circle_center_to_closest_point_on_rect, Motion& circle)
+bool is_circle_rect_collision(vec2 circle_center_to_closest_point_on_rect, Motion& circle)
 {
 	return glm::length(circle_center_to_closest_point_on_rect) < (circle.scale.x / 2);
 }
 
 // distance from circle's center to the point on the rect that is closest to the circle
-vec3 circle_rect_distance(Motion& circle, Motion& rect, ECS_ENTT::Entity circle_entity)
+vec2 circle_rect_distance(Motion& circle, Motion& rect, vec2 clamped)
 {
-	vec3 half_rect = { rect.scale.x / 2.0f, rect.scale.y / 2.0f, 0 };
-	// distance between the circle center and the rect center
-	vec3 center_to_center_vector = circle.position - rect.position;
-	vec3 clamped_distance = glm::clamp(center_to_center_vector, -half_rect, half_rect);
-	vec3 closest_point_to_circle_on_rect = rect.position + clamped_distance;
+	vec2 closest_point_to_circle_on_rect = glm::vec2(rect.position) + clamped;
 
-	return closest_point_to_circle_on_rect - circle.position;
+	vec2 circle_center_to_closest_point_on_rect = closest_point_to_circle_on_rect - glm::vec2(circle.position);
+	return circle_center_to_closest_point_on_rect;
 }
 
 
@@ -133,19 +147,25 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 			// gravity based on time passed
 			motionComponent_i.velocity.y += gravity.gravitational_constant * (elapsed_ms / 1000.0f);
 			// horizontal friction
-			motionComponent_i.velocity.x -= motionComponent_i.velocity.x * (elapsed_ms / 1000.0f) * 0.3;
+			motionComponent_i.velocity.x -= motionComponent_i.velocity.x * (elapsed_ms / 1000.0f) * HORIZONTAL_FRICTION_MAGNITUDE;
 		}
 
 		float step_seconds = 1.0f * (elapsed_ms / 1000.f);
 
-		motionComponent_i.position += motionComponent_i.velocity * step_seconds;
-
+		if (motionComponent_i.can_move) {
+			motionComponent_i.position += motionComponent_i.velocity * step_seconds;
+		}
 	}
 
 	// check for collisions between all entities
 	for (auto entityID_i : motionEntitiesView)
 	{
 		ECS_ENTT::Entity entity_i = ECS_ENTT::Entity(entityID_i, WorldSystem::ActiveScene);
+
+		// Disregard physics for all entities with the IgnorePhysics component (all tiles and purely visual entities)
+		if (entity_i.HasComponent<IgnorePhysics>()) 
+			continue;
+		
 		auto& motionComponent_i = entity_i.GetComponent<Motion>();
 
 		// First check if the entity is colliding with any of the scene bounds
@@ -157,29 +177,28 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 			float radius_i = sqrt(pow(bounding_box.x / 2.0f, 2.f) + pow(bounding_box.y / 2.0f, 2.f));
 
 			vec2 size = WorldSystem::ActiveScene->m_Size;
-			float friction = 0.1;
 
 			if (!entity_i.HasComponent<BouncyTile>())
 			{
 				if (x_pos - radius_i < 0.f) // left wall
 				{
 					motionComponent_i.position.x = 0.f + radius_i;
-					reflect_and_add_friction_to_entity(motionComponent_i.velocity.x, friction);
+					reflect_and_add_friction_to_entity(motionComponent_i.velocity.x);
 				}
 				else if (x_pos + radius_i > size.x) // right wall
 				{
 					motionComponent_i.position.x = size.x - radius_i;
-					reflect_and_add_friction_to_entity(motionComponent_i.velocity.x, friction);
+					reflect_and_add_friction_to_entity(motionComponent_i.velocity.x);
 				}
 				else if (y_pos - radius_i < 0.f) // ceiling
 				{
 					motionComponent_i.position.y = 0.f + radius_i;
-					reflect_and_add_friction_to_entity(motionComponent_i.velocity.y, friction);
+					reflect_and_add_friction_to_entity(motionComponent_i.velocity.y);
 				}
 				else if (y_pos + radius_i > size.y) // floor
 				{
 					motionComponent_i.position.y = size.y - radius_i;
-					reflect_and_add_friction_to_entity(motionComponent_i.velocity.y, friction);
+					reflect_and_add_friction_to_entity(motionComponent_i.velocity.y);
 				}
 				runCollisionCallbacks(entity_i, entity_i, true);
 
@@ -192,27 +211,30 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 		WorldSystem::ActiveScene->m_Registry.view<Motion>().each([&](const auto entityID_j, auto &&...)
 		{
 			ECS_ENTT::Entity entity_j = ECS_ENTT::Entity(entityID_j, WorldSystem::ActiveScene);
-			if (entity_j == entity_i)
+
+			if (entity_j == entity_i) // Don't need to check if the same entity is colliding with each other
 			{
 				return;
 			}
+
 			auto& motionComponent_j = entity_j.GetComponent<Motion>();
 
 			//////////////////////////// Collision between a non-tile entity and a tile ////////////////////////////
 			// check for Tile BouncyTile and other Object Entity collisions
 			// for now, Walls are stationary to simplify things
-			if (!entity_i.HasComponent<BouncyTile>() && entity_j.HasComponent<BouncyTile>())
+			if (entity_j.HasComponent<BouncyTile>())
 			{
 				// entity_i is not a wall, entity_j is a wall.
 				// circle to rectangle collisions
-				vec3 collision = circle_rect_distance(motionComponent_i, motionComponent_j, entity_i);
+				vec2 clamped = get_clamped_distance(motionComponent_i, motionComponent_j);
+				vec2 collision = circle_rect_distance(motionComponent_i, motionComponent_j, clamped);
 				if (is_circle_rect_collision(collision, motionComponent_i))
 				{
-					VectorDir direction_i = vector_dir(glm::vec2(collision));
+					VectorDir direction_i = vector_dir(glm::vec2(collision), clamped, motionComponent_i);
 					if (direction_i >= VectorDir::LEFT) // left or right - need to move position.x
 					{
 						// flip direction and multiply some friction
-						motionComponent_i.velocity.x = -motionComponent_i.velocity.x * 0.9;
+						motionComponent_i.velocity.x *= VELOCITY_BOUNCE_MULTIPLIER;
 						float move_out_distance = radius - std::abs(collision.x);
 						if (direction_i == LEFT)
 						{
@@ -226,7 +248,7 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 					else if (direction_i <= VectorDir::DOWN) // up or down - need to move position.y
 					{
 						// flip direction and multiply some friction
-						motionComponent_i.velocity.y = -motionComponent_i.velocity.y * 0.9;
+						motionComponent_i.velocity.y *= VELOCITY_BOUNCE_MULTIPLIER;
 						float move_out_distance = radius - std::abs(collision.y);
 						if (direction_i == UP)
 						{
@@ -242,10 +264,8 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 			}
 			//////////////////////////////////////////////////////////////////////////////
 
-			// Check that the entities aren't the same, aren't both walls, and that they collide
-			if (entity_i != entity_j && !entity_i.HasComponent<BouncyTile>() &&
-				!entity_j.HasComponent<BouncyTile>() &&
-				collides(motionComponent_i, motionComponent_j))
+			// Check that the entities aren't both walls, and that they collide
+			if (!entity_j.HasComponent<BouncyTile>() && collides(motionComponent_i, motionComponent_j))
 			{
 				// Create a collision event - notify observers
 				runCollisionCallbacks(entity_i, entity_j, false);
@@ -274,11 +294,6 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 	}
 }
 
-PhysicsSystem::Collision::Collision(ECS_ENTT::Entity& other)
-{
-	this->other = other;
-}
-
 void PhysicsSystem::attach(std::function<void(ECS_ENTT::Entity, ECS_ENTT::Entity, bool)> fn)
 {
 	callbacks.push_back(fn);
@@ -292,9 +307,4 @@ void PhysicsSystem::runCollisionCallbacks(ECS_ENTT::Entity i, ECS_ENTT::Entity j
 		// run the callback functions
 		fn(i, j, hit_wall);
 	}
-}
-
-// todo: example, remove if not needed
-void PhysicsSystem::getState()
-{
 }

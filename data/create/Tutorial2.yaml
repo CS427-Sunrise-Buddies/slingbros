@@ -1,0 +1,18 @@
+name: Tutorial2
+background: cloudy_parallax_background.png
+background_music: happy_intro_music.wav
+map: |
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T1 --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- T0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  T5 T5 T5 E1 T5 T5 T3 -- -- E4 -- T3 T5 T5 T5 T5 T5 T5
+  T3 T3 T3 T3 T3 T3 T2 T3 T3 T3 T3 T2 T3 T3 T3 T3 T3 T3
+  T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+  T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+dialogue_boxes:
+   - Tutorial2/tutorial2_dialogue_0.png
+   - Tutorial2/tutorial2_dialogue_1.png
+   - Tutorial2/tutorial2_dialogue_2.png

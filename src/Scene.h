@@ -3,6 +3,8 @@
 #include <string>
 #include <optional>
 #include "entt.hpp"
+#include "Camera.h"
+#include <queue>
 
 #include <glm/vec2.hpp>
 
@@ -20,6 +22,7 @@ namespace ECS_ENTT
 		Scene() = default;
 
 		explicit Scene(std::string name, glm::vec2 size);
+		explicit Scene(std::string name, glm::vec2 size, Camera* camera);
 
 		~Scene() = default;
 
@@ -27,11 +30,24 @@ namespace ECS_ENTT
 
 		void DestroyEntity(Entity entity);
 
-		void OnUpdate(float deltaTime);
+		unsigned int GetPlayer();
 
+		void SetPlayer(unsigned int index);
+
+		Camera* GetCamera() const { return m_Camera; }
+
+		void PointCamera(glm::vec3 position);
+		
+		std::queue<std::string> GetDialogueBoxNames();
+		
+		void PopDialogueBoxNames();
+		
 	public:
 		// Name of the scene
 		std::string m_Name;
+
+		// Name of the scene's background file
+		std::string m_BackgroundFilename;
 
 		// Registry to contain the component data and entity IDs
 		entt::registry m_Registry;
@@ -39,21 +55,29 @@ namespace ECS_ENTT
 		// Size of the scene
 		glm::vec2 m_Size;
 
+		// Each scene has a camera
+		Camera* m_Camera;
+
+		// Index of current player
+		unsigned int m_Player = 0;
+		
+		// File names of Dialogue boxes
+		std::queue<std::string> dialogue_box_names;
+				
+		bool is_in_dialogue;
+		
+		std::string current_dialogue_box;
+
 		// Grid of entity type keys for AI path finding
 		typedef std::vector<std::string> LevelRow;
 		typedef std::vector<LevelRow> LevelMap;
 		LevelMap m_Map;
 
-	private:
-		template<typename T>
-		void OnComponentAdded(Entity entity, T& component);
+		// Name of the background music used for this scene
+		std::string m_BackgroundMusicFileName;
 
 	private:
 		friend class Entity;
-
-		// TODO: these will need to be set properly whenever the game window is created/resized
-		uint32_t m_ViewportWidth = 0;
-		uint32_t m_ViewportHeight = 0;
 	};
 
 }

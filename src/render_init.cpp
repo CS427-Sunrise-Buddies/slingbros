@@ -7,14 +7,9 @@
 #include <iostream>
 #include <fstream>
 
-const uint SPRITE_PIXEL_WIDTH = 32;
-const uint SPRITE_PIXEL_HEIGHT = 32;
-const uint SPRITESHEET_PIXEL_WIDTH = 256;
-const uint SPRITESHEET_PIXEL_HEIGHT = 256;
-
 // World initialization
 RenderSystem::RenderSystem(GLFWwindow& window) :
-	window(window)
+	window(window), transformMatrices(new glm::mat4[MAX_NUM_PARTICLES]), particleColours(new glm::vec4[MAX_NUM_PARTICLES]), instanced_colours_VBO(0), instanced_transforms_VBO(0)
 {
 	glfwMakeContextCurrent(&window);
 	glfwSwapInterval(1); // vsync
@@ -28,6 +23,55 @@ RenderSystem::RenderSystem(GLFWwindow& window) :
 	glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
 
 	initScreenTexture();
+
+	// Set starting transformMatrices and particleColours for instanced rendering
+	glm::mat4 identity = glm::mat4(1.0f);
+	glm::vec4 defaultColour = glm::vec4(1.0f);
+	for (int i = 0; i < MAX_NUM_PARTICLES; i++)
+	{
+		transformMatrices[i] = identity;
+		particleColours[i] = defaultColour;
+	}
+
+	// Setup Particle System VAO
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	auto particleMesh = ParticleSystem::GetInstance()->GetParticleMeshInstanced();
+	// Setting shaders
+	glUseProgram(particleMesh->effect.program);
+	glBindVertexArray(particleMesh->mesh.vao);
+	gl_has_errors();
+	// Instanced colour VBO
+	glGenBuffers(1, &instanced_colours_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, instanced_colours_VBO);
+	size_t vec4_size = sizeof(glm::vec4);
+	glBufferData(GL_ARRAY_BUFFER, MAX_NUM_PARTICLES * vec4_size, &particleColours[0], GL_DYNAMIC_DRAW);
+	// Setup for vec4 instanceColour
+	GLint instance_colour_loc = glGetAttribLocation(particleMesh->effect.program, "instanceColour");
+	glEnableVertexAttribArray(instance_colour_loc);
+	glVertexAttribPointer(instance_colour_loc, 4, GL_FLOAT, GL_FALSE, vec4_size, (void*)0);
+	// Tell OpenGL to increment to next colour vec4 every render call
+	glVertexAttribDivisor(instance_colour_loc, 1);
+	// Instanced transform VBO
+	//unsigned int instanced_transforms_VBO;
+	glGenBuffers(1, &instanced_transforms_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, instanced_transforms_VBO);
+	glBufferData(GL_ARRAY_BUFFER, MAX_NUM_PARTICLES * 4 * sizeof(vec4_size), &transformMatrices[0], GL_DYNAMIC_DRAW);
+	// Setup for mat4 transformMatrices (which are just 4 vec4s each)
+	GLint instance_transform_loc = glGetAttribLocation(particleMesh->effect.program, "instanceTransform");
+	glEnableVertexAttribArray(instance_transform_loc);
+	glVertexAttribPointer(instance_transform_loc, 4, GL_FLOAT, GL_FALSE, 4 * vec4_size, (void*)0);
+	glEnableVertexAttribArray(instance_transform_loc + 1);
+	glVertexAttribPointer(instance_transform_loc + 1, 4, GL_FLOAT, GL_FALSE, 4 * vec4_size, (void*)(1 * vec4_size));
+	glEnableVertexAttribArray(instance_transform_loc + 2);
+	glVertexAttribPointer(instance_transform_loc + 2, 4, GL_FLOAT, GL_FALSE, 4 * vec4_size, (void*)(2 * vec4_size));
+	glEnableVertexAttribArray(instance_transform_loc + 3);
+	glVertexAttribPointer(instance_transform_loc + 3, 4, GL_FLOAT, GL_FALSE, 4 * vec4_size, (void*)(3 * vec4_size));
+	// Tell OpenGL to increment to next matrix every render call
+	glVertexAttribDivisor(instance_transform_loc, 1);
+	glVertexAttribDivisor(instance_transform_loc + 1, 1);
+	glVertexAttribDivisor(instance_transform_loc + 2, 1);
+	glVertexAttribDivisor(instance_transform_loc + 3, 1);
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 RenderSystem::~RenderSystem()
@@ -95,6 +139,81 @@ void RenderSystem::createSprite(ShadedMesh& sprite, std::string texture_path, st
 
 	// Loading shaders
 	sprite.effect.load_from_file(shader_path(shader_name) + ".vs.glsl", shader_path(shader_name) + ".fs.glsl");
+}
+
+void RenderSystem::createBackgroundSprite(ShadedMesh& sprite, std::string texture_path, std::string shader_name)
+{
+	if (texture_path.length() > 0)
+		sprite.texture.load_from_file(texture_path.c_str());
+
+	// The position corresponds to the center of the texture.
+	TexturedVertex vertices[4];
+	vertices[0].position = { -1.f / 2, +1.f / 2, 0.f };
+	vertices[1].position = { +1.f / 2, +1.f / 2, 0.f };
+	vertices[2].position = { +1.f / 2, -1.f / 2, 0.f };
+	vertices[3].position = { -1.f / 2, -1.f / 2, 0.f };
+
+	// Set background sprites to be tiled 10 times
+	vertices[0].texcoord = { 0.f, 10.f };
+	vertices[1].texcoord = { 10.f, 10.f };
+	vertices[2].texcoord = { 10.f, 0.f };
+	vertices[3].texcoord = { 0.f, 0.f };
+
+	// Counterclockwise as it's the default opengl front winding direction.
+	uint16_t indices[] = { 0, 3, 1, 1, 3, 2 };
+
+	glGenVertexArrays(1, sprite.mesh.vao.data());
+	glGenBuffers(1, sprite.mesh.vbo.data());
+	glGenBuffers(1, sprite.mesh.ibo.data());
+	gl_has_errors();
+
+	// Vertex Buffer creation
+	glBindBuffer(GL_ARRAY_BUFFER, sprite.mesh.vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // sizeof(TexturedVertex) * 4
+	gl_has_errors();
+
+	// Index Buffer creation
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sprite.mesh.ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); // sizeof(uint16_t) * 6
+	gl_has_errors();
+
+	glBindVertexArray(0); // Unbind VAO (it's always a good thing to unbind any buffer/array to prevent strange bugs), remember: do NOT unbind the EBO, keep it bound to this VAO
+
+	// Loading shaders
+	sprite.effect.load_from_file(shader_path(shader_name) + ".vs.glsl", shader_path(shader_name) + ".fs.glsl");
+}
+
+void RenderSystem::createParticle(ShadedMesh& particleMesh, std::string shader_name)
+{
+	// The position corresponds to the center of the texture.
+	TexturedVertex vertices[4];
+	vertices[0].position = { -1.f / 2, +1.f / 2, 0.f };
+	vertices[1].position = { +1.f / 2, +1.f / 2, 0.f };
+	vertices[2].position = { +1.f / 2, -1.f / 2, 0.f };
+	vertices[3].position = { -1.f / 2, -1.f / 2, 0.f };
+
+	// Counterclockwise as it's the default opengl front winding direction.
+	uint16_t indices[] = { 0, 3, 1, 1, 3, 2 };
+
+	glGenVertexArrays(1, particleMesh.mesh.vao.data());
+	glGenBuffers(1, particleMesh.mesh.vbo.data());
+	glGenBuffers(1, particleMesh.mesh.ibo.data());
+	gl_has_errors();
+
+	// Vertex Buffer creation
+	glBindBuffer(GL_ARRAY_BUFFER, particleMesh.mesh.vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // sizeof(TexturedVertex) * 4
+	gl_has_errors();
+
+	// Index Buffer creation
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particleMesh.mesh.ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); // sizeof(uint16_t) * 6
+	gl_has_errors();
+
+	glBindVertexArray(0); // Unbind VAO (it's always a good thing to unbind any buffer/array to prevent strange bugs), remember: do NOT unbind the EBO, keep it bound to this VAO
+
+	// Loading shaders
+	particleMesh.effect.load_from_file(shader_path(shader_name) + ".vs.glsl", shader_path(shader_name) + ".fs.glsl");
 }
 
 // Load a new mesh from disc and register it with ECS

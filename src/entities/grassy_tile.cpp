@@ -22,6 +22,7 @@ ECS_ENTT::Entity GrassyTile::createGrassyTile(vec3 position, ECS_ENTT::Scene* sc
 	grassyTileEntity.AddComponent<BouncyTile>();
 	grassyTileEntity.AddComponent<Tile>();
 	grassyTileEntity.AddComponent<GrassyTile>();
+	grassyTileEntity.AddComponent<IgnorePhysics>();
 
 	return grassyTileEntity;
 }

@@ -1,0 +1,32 @@
+name: Tutorial0
+background: cloudy_parallax_background.png
+background_music: happy_intro_music.wav
+map: |
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T1 --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- T0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  T5 T5 T5 E1 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5
+  T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3
+  T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+  T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+dialogue_boxes:
+   - Tutorial0/narrative_origin_0.png
+   - Tutorial0/narrative_origin_1.png
+   - Tutorial0/narrative_origin_2.png
+   - Tutorial0/narrative_origin_3.png
+   - Tutorial0/tutorial0_dialogue_0.png
+   - Tutorial0/tutorial0_dialogue_1.png
+   - Tutorial0/tutorial0_dialogue_2.png
+   - Tutorial0/tutorial0_dialogue_3.png
+   - Tutorial0/tutorial0_dialogue_4.png
+   - Tutorial0/tutorial0_dialogue_5.png
+   - Tutorial0/tutorial0_dialogue_6.png
+   - Tutorial0/tutorial0_dialogue_7.png
+   - Tutorial0/tutorial0_dialogue_8.png
+   - Tutorial0/tutorial0_dialogue_9.png
+   - Tutorial0/tutorial0_dialogue_10.png
+   - Tutorial0/tutorial0_dialogue_11.png
+   

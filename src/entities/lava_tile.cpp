@@ -22,6 +22,7 @@ ECS_ENTT::Entity LavaTile::createLavaTile(vec3 position, ECS_ENTT::Scene* scene)
 	lavaTileEntity.AddComponent<BouncyTile>();
 	lavaTileEntity.AddComponent<Tile>();
 	lavaTileEntity.AddComponent<LavaTile>();
+	lavaTileEntity.AddComponent<IgnorePhysics>();
 
 	return lavaTileEntity;
 }

@@ -15,3 +15,16 @@ private:
 	int stepsBeforeTurn;
 	int n;
 };
+
+class SkyPatrol : public BehaviorTree::Node {
+public:
+	SkyPatrol(int stepsBeforeTurn);
+
+private:
+	void init(ECS_ENTT::Entity e) override;
+
+	BehaviorTree::State process(ECS_ENTT::Entity e) override;
+
+	int stepsBeforeTurn;
+	int n;
+};

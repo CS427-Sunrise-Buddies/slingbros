@@ -24,6 +24,7 @@ ECS_ENTT::Entity StartTile::createStartTile(vec3 position, ECS_ENTT::Scene* scen
 
 	startTileEntity.AddComponent<Tile>();
 	startTileEntity.AddComponent<StartTile>();
+	startTileEntity.AddComponent<IgnorePhysics>();
 
 	return startTileEntity;
 }

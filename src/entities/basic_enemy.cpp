@@ -14,9 +14,8 @@ ECS_ENTT::Entity BasicEnemy::createBasicEnemy(vec3 position, ECS_ENTT::Scene* sc
 	std::string key = "enemy_basic";
 	ShadedMesh& resource = cache_resource(key);
 
-	if (resource.effect.program.resource == 0) {
-		RenderSystem::createSprite(resource, textures_path("enemy_basic.png"), "textured");
-	}
+	if (resource.effect.program.resource == 0)
+		RenderSystem::createSprite(resource, textures_path("enemy_characters_spritesheet.png"), "textured", { 0, 0 });
 
 	basicEnemyEntity.AddComponent<ShadedMeshRef>(resource);
 
@@ -27,18 +26,19 @@ ECS_ENTT::Entity BasicEnemy::createBasicEnemy(vec3 position, ECS_ENTT::Scene* sc
 	motionComponent.angle = 0.0f;
 	motionComponent.velocity = {50.0f, 0.0f, 0.0f};
 	motionComponent.scale = {resource.mesh.original_size.x * SPRITE_SCALE, resource.mesh.original_size.y * SPRITE_SCALE, 1.0f};
+	motionComponent.can_move = false;
 
 	// Initiate AI component + Behavior Tree for Basic Enemy
 	AI& aiComponent = basicEnemyEntity.AddComponent<AI>();
-	auto* shootNode = new ShootInRange(MAX_SHOOT_RANGE);
-	auto* patrolNode = new Patrol(STEPS_BEFORE_TURN);
+	auto* shootNode = new ShootInRange(BASIC_ENEMY_MAX_SHOOT_RANGE);
+	auto* patrolNode = new Patrol(BASIC_ENEMY_STEPS_BEFORE_TURN);
 	auto* root = new BehaviorTree::Selector(std::vector<BehaviorTree::Node*>({shootNode, patrolNode}));
 	aiComponent.behavior_tree = root;
 
 	basicEnemyEntity.AddComponent<BasicEnemy>();
 
 	// Set up the animation component
-	basicEnemyEntity.AddComponent<Animation>(key, textures_path("test_spritesheet.png"), glm::vec2(0, 2), 7, 200.0f);
+	basicEnemyEntity.AddComponent<Animation>(key, glm::vec2(0, 0), 7, 200.0f, true);
 
 	return basicEnemyEntity;
 }

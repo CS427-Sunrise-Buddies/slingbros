@@ -57,8 +57,10 @@ void Camera::RecalculateViewMatrix()
 	glm::mat4 transformationMatrix = glm::mat4(1.0f);
 	// Translation
 	transformationMatrix = glm::translate(transformationMatrix, m_Position);
-	// Rotation (z axis only, since this is an orthographic camera)
+	// Rotation (z axis)
 	transformationMatrix = glm::rotate(transformationMatrix, glm::radians(m_RotationZ), glm::vec3(0.0f, 0.0f, 1.0f));
+	// Rotation (y axis)
+	transformationMatrix = glm::rotate(transformationMatrix, glm::radians(m_RotationY), glm::vec3(0.0f, 1.0f, 0.0f));
 	// Now take the inverse to get the View Matrix
 	m_ViewMatrix = glm::inverse(transformationMatrix);
 

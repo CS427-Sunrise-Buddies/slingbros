@@ -22,6 +22,7 @@ ECS_ENTT::Entity GroundTile::createGroundTile(vec3 position, ECS_ENTT::Scene* sc
 	groundTileEntity.AddComponent<BouncyTile>();
 	groundTileEntity.AddComponent<Tile>();
 	groundTileEntity.AddComponent<GroundTile>();
+	groundTileEntity.AddComponent<IgnorePhysics>();
 
 	return groundTileEntity;
 }

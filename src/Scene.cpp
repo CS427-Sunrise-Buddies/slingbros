@@ -11,7 +11,17 @@ namespace ECS_ENTT {
 
 	Scene::Scene(std::string name, glm::vec2 size) :
 		m_Name(std::move(name)),
+		m_BackgroundFilename(""),
 		m_Size(vec2(size.x * SPRITE_SCALE, size.y * SPRITE_SCALE)),
+		m_Camera(new Camera()),
+		m_Map(LevelMap(size.y,LevelRow(size.x)))
+		{};
+
+	Scene::Scene(std::string name, glm::vec2 size, Camera* camera) :
+		m_Name(std::move(name)),
+		m_BackgroundFilename(""),
+		m_Size(vec2(size.x * SPRITE_SCALE, size.y * SPRITE_SCALE)),
+		m_Camera(camera),
 		m_Map(LevelMap(size.y,LevelRow(size.x)))
 		{};
 
@@ -21,9 +31,6 @@ namespace ECS_ENTT {
 		// Create the entity from a handle
 		entt::entity entityHandle = m_Registry.create();
 		ECS_ENTT::Entity entity = Entity(entityHandle, this);
-
-		// TODO: might want to add a TransformComponent to all entities
-		//entity.AddComponent<TransformComponent>();
 
 		// TODO: might want to add a TagComponent to all entities
 		//auto& tagComponent = entity.AddComponent<TagComponent>(name);
@@ -37,30 +44,26 @@ namespace ECS_ENTT {
 		m_Registry.destroy(entity);
 	}
 
-	void Scene::OnUpdate(float deltaTime)
+	unsigned int Scene::GetPlayer()
 	{
-		// TODO: Here we can find the camera entity and then use it to render this Scene
+		return m_Player;
 	}
 
-	template<typename T>
-	void Scene::OnComponentAdded(Entity entity, T& component)
+	void Scene::SetPlayer(const unsigned int index)
 	{
-		// Never supposed to not have a specialization for a component type
-		// (see below for examples of specialized overloads)
-		assert(false);
+		m_Player = index;
 	}
 
-	// Examples on how we can later use OnComponentAdded functions for each type of component
+	void Scene::PointCamera(vec3 position) {
+		m_Camera->SetPosition(vec3(position.x, position.y, m_Camera->GetPosition().z));
+	}
 
-	//template<>
-	//void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& cameraComponent)
-	//{
-	//	cameraComponent.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
-	//}
+	std::queue<std::string> Scene::GetDialogueBoxNames() {
+		return dialogue_box_names;
+	}
 
-	//template<>
-	//void Scene::OnComponentAdded<ExampleComponent>(Entity entity, ExampleComponent& exampleComponent)
-	//{
-	//}
+	void Scene::PopDialogueBoxNames() {
+		dialogue_box_names.pop();
+	}
 
 }

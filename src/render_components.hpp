@@ -57,7 +57,7 @@ struct GLResource
 	};
 };
 
-// Single Vertex Buffer element for non-textured meshes (colored_mesh.vs.glsl & salmon.vs.glsl)
+// Single Vertex Buffer element for non-textured meshes (colored_mesh.vs.glsl)
 struct ColoredVertex
 {
 	vec3 position;

@@ -15,7 +15,6 @@
 class Font;
 
 /**
- * Credits to the 427 TAs
  * `Text` is a basic class used for rendering text to the screen.
  * Any `Text` object added to the ECS system via `ECS::registry<Text>`
  * will be drawn automatically on top of other visual elements.
@@ -142,7 +141,7 @@ private:
 
     // Allow the `drawText` function to access the private
     // `getCharacter` function. See `drawText` below.
-    friend void drawText(const Text&, glm::ivec2);
+    friend void drawText(const Text&, glm::vec2);
 };
 
 /**
@@ -151,4 +150,4 @@ private:
  * for all text objects in `ECS::registry<Text>` and this function is
  * not to be used otherwise.
  */
-void drawText(const Text& text, glm::ivec2 frameBufferSize);
+void drawText(const Text& text, glm::vec2 gameUnitSize);

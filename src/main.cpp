@@ -13,6 +13,7 @@
 #include "physics.hpp"
 #include "ai.hpp"
 #include "animation.hpp"
+#include "particle_system.hpp"
 #include "debug.hpp"
 
 #include "Entity.h"
@@ -39,14 +40,8 @@ int main()
 	RenderSystem renderer(*world.window);
 	PhysicsSystem physics;
 	AnimationSystem animSystem;
+	ParticleSystem* particleSystem = ParticleSystem::GetInstance();
 	AISystem ai;
-
-	// Initialize camera properties
-	Camera* activeCamera = WorldSystem::GetActiveCamera();
-	activeCamera->SetViewportSize(WINDOW_SIZE_IN_PX.x, WINDOW_SIZE_IN_PX.y);
-	activeCamera->SetPosition(glm::vec3(400, 300, 600));
-	activeCamera->SetRotationZ(0);
-	activeCamera->SetPerspective(glm::radians(80.0f), 0.01f, 2000.0f);
 
 	// Observer Pattern: attach collision listeners 
 	physics.attach([&world](ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, bool hit_wall) {
@@ -55,12 +50,21 @@ int main()
 	physics.attach([&animSystem](ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, bool hit_wall) {
 		animSystem.collision_listener(entity_i, entity_j, hit_wall);
 	});
+	physics.attach([&particleSystem](ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, bool hit_wall) {
+		particleSystem->grass_collision_listener(entity_i, entity_j, hit_wall);
+		particleSystem->dirt_collision_listener(entity_i, entity_j, hit_wall);
+		particleSystem->lava_block_collision_listener(entity_i, entity_j, hit_wall);
+	});
 
 	// Set all states to default
 	world.restart();
 	auto time = Clock::now();
 	
-	WorldSystem::ActiveScene = WorldSystem::MenuInit(WINDOW_SIZE_IN_GAME_UNITS);
+	ECS_ENTT::Scene* menuScene = WorldSystem::MenuInit(WINDOW_SIZE_IN_GAME_UNITS);
+	WorldSystem::ActiveScene = menuScene;
+	Camera* activeCamera = menuScene->GetCamera();
+	
+	WorldSystem::HelpInit();
 
 	auto freeze_time = DebugSystem::freeze_delay_ms;
 	// Variable timestep loop
@@ -77,12 +81,15 @@ int main()
 
 		world.HandleCameraMovement(activeCamera, elapsed_ms);
 		
-		if (!DebugSystem::in_freeze_mode && !WorldSystem::helpScreenToggle) {
+		if (!DebugSystem::in_freeze_mode) {
 			DebugSystem::clearDebugComponents();
 			ai.step(elapsed_ms, WINDOW_SIZE_IN_GAME_UNITS);
-			WorldSystem::ActiveScene = world.step(elapsed_ms, WINDOW_SIZE_IN_GAME_UNITS);
+			world.step(elapsed_ms, WINDOW_SIZE_IN_GAME_UNITS);
+			activeCamera = WorldSystem::ActiveScene->GetCamera();
+			particleSystem->step(elapsed_ms);
 			if (world.getIsLoadNextLevel())
 			{
+				particleSystem->clearParticles();
 				world.load_next_level();
 				world.setIsLoadNextLevel(false);
 				continue;
@@ -98,7 +105,7 @@ int main()
 				freeze_time = DebugSystem::freeze_delay_ms;
 			}
 		}
-		renderer.draw(WINDOW_SIZE_IN_GAME_UNITS, *activeCamera);
+		renderer.draw(WINDOW_SIZE_IN_GAME_UNITS, *activeCamera, particleSystem);
 	}
 
 	return EXIT_SUCCESS;

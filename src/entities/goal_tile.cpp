@@ -23,6 +23,7 @@ ECS_ENTT::Entity GoalTile::createGoalTile(vec3 position, ECS_ENTT::Scene* scene)
 
 	goalTileEntity.AddComponent<Tile>();
 	goalTileEntity.AddComponent<GoalTile>();
+	goalTileEntity.AddComponent<IgnorePhysics>();
 
 	return goalTileEntity;
 }

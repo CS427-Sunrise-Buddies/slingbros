@@ -2,9 +2,9 @@
 #include "Entity.h"
 #include "Scene.h"
 
-const size_t MAX_ATTACK_RANGE = 250.0;
-const size_t MAX_SHOOT_RANGE = 500.0;
-const size_t STEPS_BEFORE_TURN = 250;
+const size_t BASIC_ENEMY_MAX_ATTACK_RANGE = 250.0;
+const size_t BASIC_ENEMY_MAX_SHOOT_RANGE = 500.0;
+const size_t BASIC_ENEMY_STEPS_BEFORE_TURN = 250;
 
 struct BasicEnemy
 {

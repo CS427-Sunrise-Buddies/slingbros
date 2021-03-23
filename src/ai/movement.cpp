@@ -21,3 +21,22 @@ BehaviorTree::State Patrol::process(ECS_ENTT::Entity e)
 
 	return BehaviorTree::State::Successful;
 }
+
+SkyPatrol::SkyPatrol(int stepsBeforeTurn) : stepsBeforeTurn(stepsBeforeTurn), n(stepsBeforeTurn) {
+
+}
+
+void SkyPatrol::init(ECS_ENTT::Entity e) {
+
+}
+
+BehaviorTree::State SkyPatrol::process(ECS_ENTT::Entity e) {
+	auto& motion = e.GetComponent<Motion>();
+
+	if (--n == 0) {
+		motion.velocity.y *= -1;
+		n = stepsBeforeTurn;
+	}
+
+	return BehaviorTree::State::Successful;
+}
