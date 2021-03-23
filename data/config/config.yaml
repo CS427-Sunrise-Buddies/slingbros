@@ -8,5 +8,6 @@ levels:
   - StairLevel
   - symmetry
   - spiral
+  - dropshot
   - HighUp
   - danceforme
