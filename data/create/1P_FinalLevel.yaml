@@ -1,5 +1,5 @@
 name: The Final Level
-background: cloudy_parallax_background.png
+background: red_cloudy_parallax_background.png
 background_music: bgm_epic.wav
 weather: sunny
 map: |
