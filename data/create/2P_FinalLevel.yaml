@@ -1,0 +1,43 @@
+name: The Final Level
+background: cloudy_parallax_background.png
+background_music: bgm_epic.wav
+weather: sunny
+map: |
+  T4 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T4
+  T2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T2
+  T4 -- -- -- -- -- -- -- E6 -- -- -- -- -- -- -- -- T4
+  T2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T2
+  T4 -- -- -- -- -- -- -- -- -- E3 -- -- -- -- -- T1 T4
+  T2 -- -- -- -- -- -- -- P0 -- -- -- -- -- -- -- -- T2
+  T4 H0 H0 -- -- -- -- P3 P3 -- -- -- -- -- -- -- -- T4
+  H0 -- -- -- -- -- -- P3 P3 -- -- T3 T3 T3 T3 H1 H1 T2
+  H0 -- -- -- -- -- -- -- -- -- -- -- -- -- T2 T4 T4 T4
+  H0 P1 P3 P3 P3 -- -- -- -- -- -- -- -- -- -- -- -- H0
+  T4 T3 T3 T3 T3 T3 -- -- P0 -- -- -- -- -- -- -- -- T4
+  T2 -- -- -- -- -- -- -- P3 P3 -- -- -- -- H0 H0 H0 T2
+  T4 -- -- -- -- -- -- -- P3 P3 -- -- -- -- -- -- -- H0
+  T2 P4 -- -- -- -- -- -- -- -- -- -- -- P3 P3 P3 P4 H0
+  T4 -- -- -- -- -- -- -- P2 -- -- T3 T3 T3 T3 T3 T3 T4
+  T2 H0 H0 H0 -- -- -- -- -- -- -- -- -- -- -- -- -- T2
+  H0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T4
+  H0 -- P3 P3 P3 P3 -- -- -- P3 P3 -- -- -- -- -- -- T2
+  T4 T3 T3 T3 T3 T3 T3 T3 -- P3 P3 -- -- -- -- -- -- T4
+  T2 -- -- -- -- -- -- -- -- -- -- -- -- -- H0 H0 H0 T2
+  T4 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- H0
+  T2 -- -- -- -- -- -- -- -- E1 P3 P3 P3 -- -- -- -- H0
+  T4 -- -- -- -- -- -- -- -- T3 T3 T3 T3 T3 T3 T3 T3 T4
+  T2 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T2
+  T4 -- T0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- T4
+  T2 -- -- -- -- -- P4 -- -- E4 -- -- P4 -- -- -- -- T2
+  T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3
+dialogue_boxes:
+   - 2P_FinalLevel/2P_finallevel_dialogue_0.png
+   - 2P_FinalLevel/2P_finallevel_dialogue_1.png
+   - 2P_FinalLevel/2P_finallevel_dialogue_2.png
+   - 2P_FinalLevel/2P_finallevel_dialogue_3.png
+   - 2P_FinalLevel/2P_finallevel_dialogue_4.png
+   - 2P_FinalLevel/2P_finallevel_dialogue_5.png
+   - 2P_FinalLevel/2P_finallevel_dialogue_6.png
+   - 2P_FinalLevel/2P_finallevel_dialogue_7.png
+   - 2P_FinalLevel/2P_finallevel_dialogue_8.png
+   - 2P_FinalLevel/2P_finallevel_dialogue_9.png

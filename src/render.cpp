@@ -1,7 +1,8 @@
 // internal
 #include "render.hpp"
 #include "render_components.hpp"
-//#include "tiny_ecs.hpp"
+
+#include "entities/slingbro.hpp"
 
 #include "world.hpp"
 #include "text.hpp"
@@ -17,6 +18,14 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat4& view, c
 	// Incrementally updates transformation matrix, thus ORDER IS IMPORTANT
 	Transform transform;
 	transform.translate(motion.position);
+	// Process any deformations 
+	if (entity.HasComponent<Deformation>())
+	{
+		Deformation& deformationComponent = entity.GetComponent<Deformation>();
+		transform.rotate(deformationComponent.angleRadians, glm::vec3(0.0f, 0.0f, 1.0f));
+		transform.scale(glm::vec3(deformationComponent.scaleX, deformationComponent.scaleY, 0.0f));
+		transform.rotate(-deformationComponent.angleRadians, glm::vec3(0.0f, 0.0f, 1.0f));
+	}
 	transform.rotate(motion.angle, glm::vec3(0.0f, 0.0f, 1.0f));
 	transform.scale(motion.scale);
 
@@ -82,7 +91,7 @@ void RenderSystem::drawTexturedMesh(ECS_ENTT::Entity entity, const mat4& view, c
 
 	// Getting uniform locations for glUniform* calls
 	GLint color_uloc = glGetUniformLocation(texmesh.effect.program, "fcolor");
-	glUniform3fv(color_uloc, 1, (float*)&texmesh.texture.color);
+	glUniform4fv(color_uloc, 1, (float*)&texmesh.texture.color);
 	gl_has_errors();
 
 	// Get number of indices from index buffer, which has elements uint16_t
@@ -285,6 +294,63 @@ void RenderSystem::drawParticlesInstanced(ParticleSystem* particleSystem, const 
 	glBindVertexArray(0);
 }
 
+void RenderSystem::drawBee(Bee bee, ShadedMesh* beeMesh, const mat4& view, const mat4& projection)
+{
+	Transform transform;
+	transform.translate(bee.position);
+	transform.rotate(bee.rotationX, glm::vec3(1.0f, 0.0f, 0.0f));
+	transform.rotate(bee.rotationY, glm::vec3(0.0f, 1.0f, 0.0f));
+	transform.rotate(bee.rotationZ, glm::vec3(0.0f, 0.0f, 1.0f));
+	transform.scale(glm::vec3(bee.size, bee.size, 1.0f));
+
+	// Setting shaders
+	glUseProgram(beeMesh->effect.program);
+	glBindVertexArray(beeMesh->mesh.vao);
+	gl_has_errors();
+
+	// Enabling alpha channel and depth test for textures
+	glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_DEPTH_TEST);
+	gl_has_errors();
+
+	GLint transform_uloc = glGetUniformLocation(beeMesh->effect.program, "transform");
+	GLint view_uloc = glGetUniformLocation(beeMesh->effect.program, "view");
+	GLint projection_uloc = glGetUniformLocation(beeMesh->effect.program, "projection");
+	gl_has_errors();
+
+	// Setting vertex and index buffers
+	glBindBuffer(GL_ARRAY_BUFFER, beeMesh->mesh.vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, beeMesh->mesh.ibo);
+	gl_has_errors();
+
+	// Input data location as in the vertex buffer
+	GLint in_position_loc = glGetAttribLocation(beeMesh->effect.program, "in_position");
+	glEnableVertexAttribArray(in_position_loc);
+	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), reinterpret_cast<void*>(0));
+	gl_has_errors();
+
+	// Getting uniform locations for glUniform* calls
+	GLint color_uloc = glGetUniformLocation(beeMesh->effect.program, "fcolor");
+	glUniform4fv(color_uloc, 1, (float*)&bee.colour);
+	gl_has_errors();
+
+	// Get number of indices from index buffer, which has elements uint16_t
+	GLint size = 0;
+	glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	gl_has_errors();
+	GLsizei num_indices = size / sizeof(uint16_t);
+
+	// Setting uniform values to the currently bound program
+	glUniformMatrix4fv(transform_uloc, 1, GL_FALSE, (float*)&transform.matrix);
+	glUniformMatrix4fv(view_uloc, 1, GL_FALSE, (float*)&view);
+	glUniformMatrix4fv(projection_uloc, 1, GL_FALSE, (float*)&projection);
+	gl_has_errors();
+
+	// Drawing of num_indices/3 triangles specified in the index buffer
+	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);
+	glBindVertexArray(0);
+}
+
 // Render our game world
 // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/
 void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera, ParticleSystem* particleSystem)
@@ -334,6 +400,15 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera, Pa
 		gl_has_errors();
 	}*/
 
+	// Draw all bees
+	// Using one draw call per bee
+	for (const BeeSwarm* beeSwarm : particleSystem->GetBeeSwarms())
+		for (const Bee& bee : beeSwarm->bees)
+		{
+			drawBee(bee, particleSystem->GetBeeMesh(), viewMatrix, projMatrix);
+			gl_has_errors();
+		}
+
 	// Draw text components to the screen
 	// NOTE: for simplicity, text components are drawn in a second pass,
 	// on top of all texture mesh components. This should be reasonable
@@ -342,7 +417,7 @@ void RenderSystem::draw(vec2 window_size_in_game_units, Camera& activeCamera, Pa
 	// Z-component or depth index to all rendererable components.
 	for (auto entityID : scene->m_Registry.view<Text>()) {
 		const Text& text = scene->m_Registry.get<Text>(entityID);
-		drawText(text, frame_buffer_size);
+		drawText(text, window_size_in_game_units);
 	}
 	
 	// Truely render to the screen

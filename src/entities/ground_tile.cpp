@@ -11,7 +11,7 @@ ECS_ENTT::Entity GroundTile::createGroundTile(vec3 position, ECS_ENTT::Scene* sc
 	ECS_ENTT::Entity groundTileEntity = scene->CreateEntity("Ground Tile");
 	groundTileEntity.AddComponent<ShadedMeshRef>(meshResource);
 	ShadedMeshRef& resource = groundTileEntity.GetComponent<ShadedMeshRef>();
-	resource.reference_to_cache->texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.reference_to_cache->texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = groundTileEntity.AddComponent<Motion>();
 	motionComponent.position = position;

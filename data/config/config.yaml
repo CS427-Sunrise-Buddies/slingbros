@@ -1,13 +1,17 @@
+# 1-Player
 # List the levels to load in order
 levels:
-  - Tutorial0
-  - Tutorial1
-  - Tutorial2
-  - Tutorial3
-  - LavaLevel
-  - StairLevel
-  - symmetry
+  - 1P_Intro
+  - 1P_Eugene
+  - 1P_PowerUp
+  - 1P_Enemies
+  - 1P_Bees
+  - SpikeDanger
+  - 1P_BigMoney
+  - BirdIceLevel
+  - 1P_StairLevel
   - spiral
-  - dropshot
-  - HighUp
+  - 1P_Symmetry
+  - 1P_BigDrops
   - danceforme
+  - 1P_FinalLevel

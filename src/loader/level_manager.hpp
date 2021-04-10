@@ -3,17 +3,19 @@
 #include <yaml-cpp/yaml.h>
 
 // The keys in the yaml file to parse
-static const std::string LEVEL_NAME_KEY = "name";
+static const std::string ID_KEY = "id"; // File name
+static const std::string LEVEL_NAME_KEY = "name"; // Pretty name
 static const std::string BACKGROUND_KEY = "background";
 static const std::string BACKGROUND_MUSIC_KEY = "background_music";
+static const std::string WEATHER_KEY = "weather";
 static const std::string PLAYER_KEY = "player";
+static const std::string NUM_PLAYERS_KEY = "num_players";
 static const std::string MAP_KEY = "map";
 static const std::string DIALOGUE_BOXES_KEY = "dialogue_boxes";
 static const std::string ENTITIES_KEY = "entities";
 static const std::string LEVELS_KEY = "levels"; // Used in config.yaml
 
 // Per-entity node keys
-static const std::string ID_KEY = "id";
 static const std::string TYPE_KEY = "type";
 static const std::string MOTION_KEY = "motion";
 static const std::string ANGLE_KEY = "angle";
@@ -27,7 +29,12 @@ static const std::string SLUNG_KEY = "slung";
 static const std::string POINTS_KEY = "points";
 static const std::string COUNTDOWN_KEY = "countdown";
 static const std::string SIZE_CHANGED_KEY = "size_changed";
+static const std::string MASS_KEY = "mass";
+static const std::string VALUE_KEY = "value";
+static const std::string MASS_CHANGED_KEY = "mass_changed";
 static const std::string TURNS_REMAINING_KEY = "turns_remaining";
+static const std::string AI_KEY = "ai";
+static const std::string TARGET_KEY = "target";
 
 // Entity component type key mapping
 static const std::string EMPTY_CELL = "--";
@@ -39,22 +46,36 @@ static const std::string T4 = "T4"; // Lava tile
 static const std::string T5 = "T5"; // Windy grass tile
 static const std::string T6 = "T6"; // Sand tile
 static const std::string T7 = "T7"; // Glass tile
+static const std::string T8 = "T8"; // Snowy tile
+static const std::string T9 = "T9"; // Ice Tile
 static const std::string H0 = "H0"; // Hazard tile spike
+static const std::string H1 = "H1"; // Hazard ground spike
 static const std::string E0 = "E0"; // Basic enemy
 static const std::string E1 = "E1"; // Snail enemy
 static const std::string E2 = "E2"; // BugDroid enemy
 static const std::string E3 = "E3"; // Bird enemy
 static const std::string E4 = "E4"; // Blueb enemy
+static const std::string E5 = "E5"; // Beehive enemy
+static const std::string E6 = "E6"; // Helge enemy
 static const std::string P0 = "P0"; // Speed power-up
 static const std::string P1 = "P1"; // Size up power-up
 static const std::string P2 = "P2"; // Size down power-up
+static const std::string P3 = "P3"; // Coin power-up
+static const std::string P4 = "P4"; // Mass up power-up
 static const std::string S0 = "S0"; // Orange Sling bro
 static const std::string S1 = "S1"; // Pink Sling bro
 static const std::string X0 = "X0"; // Projectile
+static const std::string X1 = "X1"; // Helge projectile
+
+// Weather Mappings
+static const std::string SUNNY = "sunny";
+static const std::string RAIN = "rain";
+static const std::string SNOW = "snow";
 
 // Name of save file
 static const std::string SAVE_FILE_NAME = "saved";
 static const std::string CONFIG_FILE_NAME = "config";
+static const std::string CONFIG2P_FILE_NAME = "config2p";
 
 class LevelManager
 {
@@ -64,7 +85,7 @@ class LevelManager
 		 *
 		 * @return List of levels names ordered in the order to be played
 		 */
-		static std::vector<std::string> get_levels();
+		static std::vector<std::string> get_levels(size_t num_players);
 
 		/**
 		 * Convenience method to programmatically generate a level from
@@ -120,4 +141,7 @@ class LevelManager
 		 * @return A vector containing the split parts of the string
 		 */
 		static std::vector<std::string> split(const std::string &in, char delim);
+
+		static WeatherTypes to_weather_type(const std::string s);
+		static std::string to_yaml_weather_type(WeatherTypes w);
 };

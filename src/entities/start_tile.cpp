@@ -14,7 +14,7 @@ ECS_ENTT::Entity StartTile::createStartTile(vec3 position, ECS_ENTT::Scene* scen
 
 	startTileEntity.AddComponent<ShadedMeshRef>(resource);
 
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f };
 
 	Motion& motionComponent = startTileEntity.AddComponent<Motion>();
 	motionComponent.position = position;

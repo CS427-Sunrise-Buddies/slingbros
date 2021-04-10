@@ -7,9 +7,11 @@
 #include <common.hpp>
 #include <entities/snail_enemy.hpp>
 #include <entities/basic_enemy.hpp>
+#include <entities/beehive_enemy.hpp>
 #include <entities/bugdroid_enemy.hpp>
 #include <entities/bird_enemy.hpp>
 #include <entities/blueb_enemy.hpp>
+#include <entities/helge_enemy.hpp>
 #include <entities/start_tile.hpp>
 #include <entities/grassy_tile.hpp>
 #include <entities/windy_grass.hpp>
@@ -18,15 +20,20 @@
 #include <entities/lava_tile.hpp>
 #include <entities/sand_tile.hpp>
 #include <entities/glass_tile.hpp>
+#include <entities/snowy_tile.hpp>
+#include <entities/ice_tile.hpp>
 #include <entities/hazard_tile_spike.hpp>
+#include <entities/spike_hazard.hpp>
 #include <entities/speed_powerup.hpp>
 #include <entities/size_up_powerup.hpp>
 #include <entities/size_down_powerup.hpp>
+#include <entities/coin_powerup.hpp>
+#include <entities/mass_up_powerup.hpp>
 #include <entities/slingbro.hpp>
 #include <entities/projectile.hpp>
+#include <entities/helge_projectile.hpp>
 #include <entities/parallax_background.hpp>
 #include "level_manager.hpp"
-#include <world.hpp>
 
 typedef ECS_ENTT::Entity (*fn)(vec3, ECS_ENTT::Scene*);
 typedef std::map<std::string, fn> FunctionMap;
@@ -40,23 +47,52 @@ const FunctionMap fns =
 				{T5, WindyGrass::createGrass},
 				{T6, SandTile::createSandTile},
 				{T7, GlassTile::createGlassTile},
+				{T8, SnowyTile::createSnowyTile},
+				{T9, IceTile::createIceTile},
 				{H0, HazardTileSpike::createHazardTileSpike},
+				{H1, HazardSpike::createSpikeHazard},
 				{E0, BasicEnemy::createBasicEnemy},
 				{E1, SnailEnemy::createSnailEnemy},
 				{E2, BugDroidEnemy::createBugDroidEnemy},
 				{E3, BirdEnemy::createBirdEnemy},
 				{E4, BluebEnemy::createBluebEnemy},
+				{E5, BeeHiveEnemy::createBeeHiveEnemy},
+				{E6, HelgeEnemy::createHelgeEnemy},
 				{P0, SpeedPowerUp::createSpeedPowerUp},
 				{P1, SizeUpPowerUp::createSizeUpPowerUp},
 				{P2, SizeDownPowerUp::createSizeDownPowerUp},
-				{S0, OrangeBro::createOrangeSlingBro},
-				{S1, PinkBro::createPinkSlingBro},
-				{X0, Projectile::createProjectile}
+				{P3, CoinPowerUp::createCoinPowerUp},
+				{P4, MassUpPowerUp::createMassUpPowerUp},
+				{S0, SlingBro::createOrangeSlingBro},
+				{S1, SlingBro::createPinkSlingBro},
+				{X0, Projectile::createProjectile},
+				{X1, HelgeProjectile::createHelgeProjectile}
 		};
 
 // See: https://github.com/jbeder/yaml-cpp/wiki/Tutorial#converting-tofrom-native-data-types
 namespace YAML
 {
+	template<>
+	struct convert<glm::vec2>
+	{
+		static Node encode(const glm::vec2& rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			return node;
+		}
+
+		static bool decode(const Node& node, glm::vec2& rhs)
+		{
+			if (!node.IsSequence() || node.size() != 2)
+				return false;
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			return true;
+		}
+	};
+
 	template<>
 	struct convert<glm::vec3>
 	{
@@ -81,9 +117,10 @@ namespace YAML
 	};
 }
 
-std::vector<std::string> LevelManager::get_levels() {
+std::vector<std::string> LevelManager::get_levels(size_t num_players) {
 	// Get the path to the config file holding the list order
-	auto file_path = config_path(yaml_file(CONFIG_FILE_NAME));
+	auto file_name = num_players == NUM_PLAYERS_1 ? CONFIG_FILE_NAME : CONFIG2P_FILE_NAME;
+	auto file_path = config_path(yaml_file(file_name));
 
 	// Open the file
 	YAML::Node file = YAML::LoadFile(file_path);
@@ -122,6 +159,8 @@ void LevelManager::create_level(const std::string& file_name)
 	printf("Background:\t%s\n", bg_src.c_str());
 	printf("BackgroundMusic:\t%s\n", bgMusic_src.c_str());
 
+	auto weather = file[WEATHER_KEY].as<std::string>();
+
 	// Map of entities in the level
 	auto level_map = file[MAP_KEY].as<std::string>();
 
@@ -132,10 +171,15 @@ void LevelManager::create_level(const std::string& file_name)
 	auto x = split(rows[0], ' ').size();
 	auto y = rows.size();
 	printf("Scene size:\t(%lu,%lu)\n", x, y);
-	auto* scene = new ECS_ENTT::Scene(level_name, {x, y });
+	auto* scene = new ECS_ENTT::Scene(level_name, {x, y});
+
+	// Set scene id which is really just the file name minus extension
+	// This is used to get the level index in world.cpp
+	scene->m_Id = split(file_name, '.')[0];
+	scene->m_Weather = to_weather_type(weather);
 
 	// Set background in scene
-	if (bg_src != "")
+	if (!bg_src.empty())
 		ParallaxBackground::createBackground(scene, bg_src);
 
 	// Set background music
@@ -178,7 +222,7 @@ void LevelManager::create_level(const std::string& file_name)
 	scene->SetPlayer(0);
 
 	// Save the created level into the repository's build levels directory
-	save_level(scene, levels_path(yaml_file(level_name)));
+	save_level(scene, levels_path(file_name));
 }
 
 ECS_ENTT::Scene *LevelManager::load_level(const std::string& file_path, Camera* camera)
@@ -193,6 +237,8 @@ ECS_ENTT::Scene *LevelManager::load_level(const std::string& file_path, Camera* 
 	auto bg_src = file[BACKGROUND_KEY].as<std::string>();
 	auto bgMusic_src = file[BACKGROUND_MUSIC_KEY].as<std::string>();
 
+	auto weather = file[WEATHER_KEY].as<std::string>();
+
 	// Map of entities in the level
 	auto level_map = file[MAP_KEY].as<std::string>();
 
@@ -203,6 +249,11 @@ ECS_ENTT::Scene *LevelManager::load_level(const std::string& file_path, Camera* 
 	auto x = split(rows[0], ' ').size();
 	auto y = rows.size();
 	auto* scene = new ECS_ENTT::Scene(level_name, {x, y}, camera);
+
+	// Set scene id which is really just the file name minus extension
+	// This is used to get the level index in world.cpp
+	scene->m_Id = file[ID_KEY].as<std::string>();
+	scene->m_Weather = to_weather_type(weather);
 
 	// Map of dialogue boxes for level
 	auto level_dialogue_boxes = file[DIALOGUE_BOXES_KEY];
@@ -217,6 +268,13 @@ ECS_ENTT::Scene *LevelManager::load_level(const std::string& file_path, Camera* 
 	// Current player whose turn it is
 	auto player_idx = file[PLAYER_KEY].as<unsigned int>();
 	scene->SetPlayer(player_idx);
+
+	// Number of players (or skip if loading new level)
+	if (file[NUM_PLAYERS_KEY])
+	{
+		auto num_players = file[NUM_PLAYERS_KEY].as<size_t>();
+		scene->SetNumPlayer(num_players);
+	}
 
 	// Convert level map in yaml to 2d vector
 	for (int i = 0; i < rows.size(); i++) // Row index
@@ -272,21 +330,59 @@ ECS_ENTT::Scene *LevelManager::load_level(const std::string& file_path, Camera* 
 
 		// Check if sizeChanged component exists
 		auto size_changed = entity[SIZE_CHANGED_KEY];
-
-		if (size_changed) {
-			// Parse sized changed component.
+		if (size_changed)
+		{
+			// Parse size changed component
 			auto turns_remaining = size_changed[TURNS_REMAINING_KEY].as<int>();
 
-			// Set sizeChanged component.
+			// Set size changed component
 			auto& e_size_changed = e.AddComponent<SizeChanged>();
 			e_size_changed.turnsRemaining = turns_remaining;
+		}
+
+		// Check if mass component exists
+		auto mass = entity[MASS_KEY];
+		if (mass)
+		{
+			// Parse value component
+			auto value = mass[VALUE_KEY].as<float>();
+
+			auto& e_mass = e.GetComponent<Mass>();
+			e_mass.value = value;
+		}
+
+		// Check if massChanged component exists
+		auto mass_changed = entity[MASS_CHANGED_KEY];
+		if (mass_changed)
+		{
+			// Parse mass changed component
+			auto turns_remaining = mass_changed[TURNS_REMAINING_KEY].as<int>();
+
+			// Set mass changed component
+			auto& e_mass_changed = e.AddComponent<MassChanged>();
+			e_mass_changed.turnsRemaining = turns_remaining;
+		}
+
+		// Check if AI component exist
+		auto ai = entity[AI_KEY];
+		if (ai)
+		{
+			// Enemy entities should be created with the AI component
+			auto& e_ai = e.HasComponent<AI>() ? e.GetComponent<AI>() : e.AddComponent<AI>();
+			e_ai.countdown = ai[COUNTDOWN_KEY].as<float>();
+
+			// Target is std::optional so we check existence before parsing and setting
+			if (ai[TARGET_KEY])
+			{
+				e_ai.target = ai[TARGET_KEY].as<glm::vec2>();
+			}
 		}
 
 		//printf("Loaded entity '%s' into scene at (%f,%f)\n", key.c_str(), position.x, position.y);
 	}
 
 	// Add a background to the loaded scene based on filename in yaml file
-	if (bg_src != "") // ignore if no background image has been set
+	if (!bg_src.empty()) // ignore if no background image has been set
 		ParallaxBackground::createBackground(scene, bg_src);
 
 	// Load background music into scene.
@@ -297,7 +393,6 @@ ECS_ENTT::Scene *LevelManager::load_level(const std::string& file_path, Camera* 
 
 void LevelManager::save_level(ECS_ENTT::Scene* scene)
 {
-	// todo(atsang): save progress per level
 	// Overwrites over old progress
 	save_level(scene, saved_path(yaml_file(SAVE_FILE_NAME)));
 }
@@ -308,6 +403,10 @@ void LevelManager::save_level(ECS_ENTT::Scene *scene, const std::string &file_pa
 	YAML::Emitter out;
 	out << YAML::BeginMap;
 
+	// File name
+	out << YAML::Key << ID_KEY;
+	out << YAML::Value << scene->m_Id;
+
 	// Name of level
 	out << YAML::Key << LEVEL_NAME_KEY;
 	out << YAML::Value << scene->m_Name;
@@ -315,6 +414,10 @@ void LevelManager::save_level(ECS_ENTT::Scene *scene, const std::string &file_pa
 	// File name of background image
 	out << YAML::Key << BACKGROUND_KEY;
 	out << YAML::Value << scene->m_BackgroundFilename;
+
+	// File name of weather
+	out << YAML::Key << WEATHER_KEY;
+	out << YAML::Value << to_yaml_weather_type(scene->m_Weather);
 
 	// File name of background music
 	out << YAML::Key << BACKGROUND_MUSIC_KEY;
@@ -324,9 +427,16 @@ void LevelManager::save_level(ECS_ENTT::Scene *scene, const std::string &file_pa
 	out << YAML::Key << PLAYER_KEY;
 	out << YAML::Value << scene->GetPlayer();
 
+	// Number of players (or skip if creating level)
+	if (scene->GetNumPlayers() > 0)
+	{
+		out << YAML::Key << NUM_PLAYERS_KEY;
+		out << YAML::Value << scene->GetNumPlayers();
+	}
+
 	// Build level map literal scalar
 	YAML::Node entities_node;
-	std::string map = "";
+	std::string map;
 	int num_rows = scene->m_Map.size();
 	for (int i = 0; i < num_rows; i++)
 	{
@@ -386,13 +496,51 @@ void LevelManager::save_level(ECS_ENTT::Scene *scene, const std::string &file_pa
 		}
 
 		// Add sizeChanged properties
-		if (entity.HasComponent<SizeChanged>()) {
+		if (entity.HasComponent<SizeChanged>())
+		{
 			auto size_changed = entity.GetComponent<SizeChanged>();
 
 			YAML::Node size_changed_node;
 			size_changed_node[TURNS_REMAINING_KEY] = size_changed.turnsRemaining;
 
 			entity_node[SIZE_CHANGED_KEY] = size_changed_node;
+		}
+
+		// Add mass properties
+		if (entity.HasComponent<Mass>())
+		{
+			auto mass = entity.GetComponent<Mass>();
+
+			YAML::Node mass_node;
+			mass_node[VALUE_KEY] = mass.value;
+			entity_node[MASS_KEY] = mass_node;
+		}
+
+		// Add massChanged properties
+		if (entity.HasComponent<MassChanged>())
+		{
+			auto mass_changed = entity.GetComponent<MassChanged>();
+
+			YAML::Node mass_changed_node;
+			mass_changed_node[TURNS_REMAINING_KEY] = mass_changed.turnsRemaining;
+
+			entity_node[MASS_CHANGED_KEY] = mass_changed_node;
+		}
+
+		// Add AI properties
+		if (entity.HasComponent<AI>())
+		{
+			auto ai = entity.GetComponent<AI>();
+
+			YAML::Node ai_node;
+			ai_node[COUNTDOWN_KEY] = ai.countdown;
+
+			if (ai.target)
+			{
+				ai_node[TARGET_KEY] = ai.target.value();
+			}
+
+			entity_node[AI_KEY] = ai_node;
 		}
 
 		// Add entity node to entities
@@ -450,18 +598,26 @@ std::string LevelManager::to_type_key(ECS_ENTT::Entity entity) {
 	if (entity.HasComponent<WindyGrass>()) return T5;
 	if (entity.HasComponent<SandTile>()) return T6;
 	if (entity.HasComponent<GlassTile>()) return T7;
+	if (entity.HasComponent<SnowyTile>()) return T8;
+	if (entity.HasComponent<IceTile>()) return T9;
 	if (entity.HasComponent<HazardTileSpike>()) return H0;
+	if (entity.HasComponent<HazardSpike>()) return H1;
 	if (entity.HasComponent<BasicEnemy>()) return E0;
 	if (entity.HasComponent<SnailEnemy>()) return E1;
 	if (entity.HasComponent<BugDroidEnemy>()) return E2;
 	if (entity.HasComponent<BirdEnemy>()) return E3;
 	if (entity.HasComponent<BluebEnemy>()) return E4;
+	if (entity.HasComponent<BeeHiveEnemy>()) return E5;
+	if (entity.HasComponent<HelgeEnemy>()) return E6;
 	if (entity.HasComponent<SpeedPowerUp>()) return P0;
 	if (entity.HasComponent<SizeUpPowerUp>()) return P1;
 	if (entity.HasComponent<SizeDownPowerUp>()) return P2;
+	if (entity.HasComponent<CoinPowerUp>()) return P3;
+	if (entity.HasComponent<MassUpPowerUp>()) return P4;
 	if (entity.HasComponent<OrangeBro>()) return S0;
 	if (entity.HasComponent<PinkBro>()) return S1;
 	if (entity.HasComponent<Projectile>()) return X0;
+	if (entity.HasComponent<HelgeProjectile>()) return X1;
 	printf("Unaccounted for component type\n");
 	return T2; // Default: GroundTile
 }
@@ -481,4 +637,20 @@ std::vector<std::string> LevelManager::split(const std::string &in, char delim)
 		}
 	}
 	return tokens;
+}
+
+WeatherTypes LevelManager::to_weather_type(const std::string s)
+{
+	if (s == SUNNY) return WeatherTypes::Sunny;
+	if (s == RAIN) return WeatherTypes::Rain;
+	if (s == SNOW) return WeatherTypes::Snow;
+	return WeatherTypes::Sunny;
+}
+
+std::string LevelManager::to_yaml_weather_type(WeatherTypes w)
+{
+	if (w == WeatherTypes::Sunny) return SUNNY;
+	if (w == WeatherTypes::Rain) return RAIN;
+	if (w == WeatherTypes::Snow) return SNOW;
+	return SUNNY;
 }

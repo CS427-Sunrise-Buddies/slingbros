@@ -4,6 +4,7 @@
 #include "debug.hpp"
 #include "world.hpp"
 #include <iostream>
+#include <entities/slingbro.hpp>
 
 static const float FRICTION = 0.1f;
 
@@ -32,9 +33,7 @@ bool collides(const Motion& motion1, const Motion& motion2)
 	float other_r = std::sqrt(std::pow(get_bounding_box(motion1).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion1).y / 2.0f, 2.f));
 	float my_r = std::sqrt(std::pow(get_bounding_box(motion2).x / 2.0f, 2.f) + std::pow(get_bounding_box(motion2).y / 2.0f, 2.f));
 	float r = max(other_r, my_r);
-	if (dist_squared < r * r)
-		return true;
-	return false;
+	return dist_squared < r * r;
 }
 
 bool check_wall_collisions(Motion m)
@@ -130,6 +129,8 @@ vec2 circle_rect_distance(Motion& circle, Motion& rect, vec2 clamped)
 
 void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 {
+	(void)window_size_in_game_units;
+
 	// Move entities based on how much time has passed, this is to (partially) avoid
 	// having entities move at different speed based on the machine.
 
@@ -147,12 +148,35 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 			// gravity based on time passed
 			motionComponent_i.velocity.y += gravity.gravitational_constant * (elapsed_ms / 1000.0f);
 			// horizontal friction
-			motionComponent_i.velocity.x -= motionComponent_i.velocity.x * (elapsed_ms / 1000.0f) * HORIZONTAL_FRICTION_MAGNITUDE;
+			auto friction = WorldSystem::ActiveScene->m_Weather == WeatherTypes::Rain
+							? RAIN_HORIZONTAL_FRICTION_MAGNITUDE
+							: HORIZONTAL_FRICTION_MAGNITUDE;
+			motionComponent_i.velocity.x -= motionComponent_i.velocity.x * (elapsed_ms / 1000.0f) * friction;
 		}
 
 		float step_seconds = 1.0f * (elapsed_ms / 1000.f);
 
-		if (motionComponent_i.can_move) {
+		// Move pathfinding AI
+		if (entity_i.HasComponent<AI>())
+		{
+			// Pathfinding AI have target node
+			auto ai = entity_i.GetComponent<AI>();
+			if (ai.target)
+			{
+				// Move AI min distance between expected step and target node destination
+				auto current_position = motionComponent_i.position;
+				auto next_position = current_position + motionComponent_i.velocity * step_seconds;
+				auto target = ai.target.value();
+				if (distance(current_position, next_position) > distance(vec2(current_position), target))
+				{
+					motionComponent_i.position = vec3(target, motionComponent_i.position.z);
+					motionComponent_i.can_move = false;
+				}
+			}
+		}
+
+		if (motionComponent_i.can_move)
+		{
 			motionComponent_i.position += motionComponent_i.velocity * step_seconds;
 		}
 	}
@@ -221,10 +245,10 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 
 			//////////////////////////// Collision between a non-tile entity and a tile ////////////////////////////
 			// check for Tile BouncyTile and other Object Entity collisions
-			// for now, Walls are stationary to simplify things
+			// for now, Tiles are stationary to simplify things
 			if (entity_j.HasComponent<BouncyTile>())
 			{
-				// entity_i is not a wall, entity_j is a wall.
+				// entity_i is not a tile, entity_j is a tile.
 				// circle to rectangle collisions
 				vec2 clamped = get_clamped_distance(motionComponent_i, motionComponent_j);
 				vec2 collision = circle_rect_distance(motionComponent_i, motionComponent_j, clamped);
@@ -271,10 +295,100 @@ void PhysicsSystem::step(float elapsed_ms, vec2 window_size_in_game_units)
 				runCollisionCallbacks(entity_i, entity_j, false);
 			}
 		});
-
 	}
 
-	(void)window_size_in_game_units;
+	// Handle bro-bro collision
+	auto slingbro_view = WorldSystem::ActiveScene->m_Registry.view<SlingBro>();
+	for (auto id_1 : slingbro_view)
+	{
+		// Retrieve the relevant components of the first bro
+		ECS_ENTT::Entity entity_1 = ECS_ENTT::Entity(id_1, WorldSystem::ActiveScene);
+		auto& motion_1 = entity_1.GetComponent<Motion>();
+		auto& mass_1 = entity_1.GetComponent<Mass>().value;
+
+		// Calculate bro radius
+		auto radius_1 = abs(motion_1.scale.x / 2.f);
+
+		// Get x, y positions and velocities of the first bro
+		auto x_1 = motion_1.position.x;
+		auto y_1 = motion_1.position.y;
+
+		// Handle bro-bro collision
+		for (auto id_2 : slingbro_view)
+		{
+			// Skip collision check with same entity
+			if (id_1 == id_2) continue;
+
+			// Retrieve the relevant components of the bros
+			ECS_ENTT::Entity entity_2 = ECS_ENTT::Entity(id_2, WorldSystem::ActiveScene);
+			auto& motion_2 = entity_2.GetComponent<Motion>();
+			auto& mass_2 = entity_2.GetComponent<Mass>().value;
+
+			// Calculate bro radius
+			auto radius_2 = abs(motion_2.scale.x / 2.f);
+
+			// Sum radii to get boundary between bro centers
+			auto collision_distance = radius_1 + radius_2; // Expected collision distance
+
+			// Calculate actual distance between the two bros
+			auto actual_distance = distance(vec2(motion_1.position), vec2(motion_2.position)); // Actual collision distance
+
+			// Bros collide
+			if (actual_distance < collision_distance)
+			{
+				// Get x, y positions and velocities of the second bro
+				auto x_2 = motion_2.position.x;
+				auto y_2 = motion_2.position.y;
+
+				// Compute x, y points of collision
+				auto collision_pt_x = (x_1 * radius_2 + x_2 * radius_1) / collision_distance;
+				auto collision_pt_y = (y_1 * radius_2 + y_2 * radius_1) / collision_distance;
+				auto collision_pt = vec2(collision_pt_x, collision_pt_y);
+
+				// Compute new velocities of the bros after elastic collision
+				auto mass_t = mass_1 + mass_2; // Total mass
+				glm::vec2 vel_1 = glm::vec2(motion_1.velocity);
+				glm::vec2 vel_2 = glm::vec2(motion_2.velocity); 
+				glm::vec2 pos_1 = glm::vec2(motion_1.position);
+				glm::vec2 pos_2 = glm::vec2(motion_2.position);
+				glm::vec2 new_vel_1 = vel_1 - ((2 * mass_2 / mass_t) * glm::dot(vel_1 - vel_2, pos_1 - pos_2) / glm::length(pos_1 - pos_2) * (pos_1 - pos_2)) / 100.0f;
+				glm::vec2 new_vel_2 = vel_2 - ((2 * mass_1 / mass_t) * glm::dot(vel_2 - vel_1, pos_2 - pos_1) / glm::length(pos_2 - pos_1) * (pos_2 - pos_1)) / 100.0f;
+
+				// Calculate overlapping distance
+				auto overlap = abs(collision_distance - actual_distance) + 5.f; // Smol epsilon
+
+				// Compute the direction to move each object out
+				auto direction_1 = vec2(motion_1.position) - collision_pt; // Direction to move bro 1 out
+				auto direction_2 = vec2(motion_2.position) - collision_pt; // Direction to move bro 2 out
+
+				// Amount to move out each entity depends on mass ratio
+				// so lighter entities move out more so it visually makes sense
+				auto ratio_1 = mass_2 / mass_t; // Equivalent to 1 - m1/mt
+				auto ratio_2 = mass_1 / mass_t; // Equivalent to 1 - m2/mt
+				motion_1.position += vec3(overlap * ratio_1 * normalize(direction_1), 0.f);
+				motion_2.position += vec3(overlap * ratio_2 * normalize(direction_2), 0.f);
+
+				// Update bro velocity components
+				motion_1.velocity = { new_vel_1.x, new_vel_1.y, 0.f };
+				motion_2.velocity = { new_vel_2.x, new_vel_2.y, 0.f };
+
+				// Deform the characters
+				glm::vec2 dispVec = vec2(motion_1.position) - vec2(motion_2.position);
+				float angle = atan(dispVec.y, dispVec.x); // angle in radians from one slingbro to the other
+				if (entity_1.HasComponent<Deformation>())
+					entity_1.RemoveComponent<Deformation>();
+				if (entity_2.HasComponent<Deformation>())
+					entity_2.RemoveComponent<Deformation>();
+				float squish_magnitude_1 = 0.5f + glm::length(new_vel_1) / MAX_VELOCITY;
+				float squish_magnitude_2 = 0.5f + glm::length(new_vel_2) / MAX_VELOCITY;
+				entity_1.AddComponent<Deformation>(1.0f - (0.2f * squish_magnitude_1), 1.0f + (0.2f * squish_magnitude_1), angle, 100.0f);
+				entity_2.AddComponent<Deformation>(1.0f - (0.2f * squish_magnitude_2), 1.0f + (0.2f * squish_magnitude_2), angle, 100.0f);
+
+				// Create a collision event - notify observers
+				runCollisionCallbacks(entity_1, entity_2, false);
+			}
+		}
+	}
 
 	// Visualization for debugging the position and scale of objects
 	if (DebugSystem::in_debug_mode)

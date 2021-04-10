@@ -1,6 +1,7 @@
-name: dropshot
+name: Dropshot
 background: cloudy_parallax_background.png
-background_music: music.wav
+background_music: bgm_rock.wav
+weather: sunny
 map: |
   -- -- T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 -- -- -- -- -- --
   -- -- T6 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T6 -- -- -- -- -- --

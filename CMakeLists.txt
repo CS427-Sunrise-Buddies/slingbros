@@ -78,6 +78,8 @@ add_executable(
         "src/entities/size_down_powerup.cpp"
         "src/entities/sand_tile.hpp"
         "src/entities/sand_tile.cpp"
+        "src/entities/projectedPath.hpp"
+        "src/entities/projectedPath.cpp"
         "src/entities/glass_tile.hpp"
         "src/entities/glass_tile.cpp"
         "src/entities/hazard_tile_spike.hpp"
@@ -92,7 +94,24 @@ add_executable(
         "src/entities/dialogue_box.cpp"
         "src/entities/screen.hpp"
         "src/entities/screen.cpp"
-)
+        "src/entities/beehive_enemy.hpp"
+        "src/entities/beehive_enemy.cpp"
+        "src/menu_system.hpp"
+        "src/menu_system.cpp"
+        "src/entities/helge_enemy.hpp"
+        "src/entities/helge_enemy.cpp"
+        "src/entities/helge_projectile.hpp"
+        "src/entities/helge_projectile.cpp"
+        "src/entities/spike_hazard.hpp"
+        "src/entities/spike_hazard.cpp"
+        "src/entities/coin_powerup.hpp"
+        "src/entities/coin_powerup.cpp"
+        "src/entities/snowy_tile.cpp"
+        "src/entities/ice_tile.hpp"
+        "src/entities/ice_tile.cpp"
+        "src/entities/mass_up_powerup.hpp"
+        "src/entities/mass_up_powerup.cpp"
+        "src/weather.hpp")
 target_include_directories(${PROJECT_NAME} PUBLIC src/)
 
 # Added this so policy CMP0065 doesn't scream
@@ -132,7 +151,7 @@ if (IS_OS_LINUX OR IS_OS_MAC)
     # Try to find packages rather than to use the precompiled ones
     # Since we're on OSX or Linux, we can just use pkgconfig.
     find_package(PkgConfig REQUIRED)
-    
+
     pkg_search_module(GLFW REQUIRED glfw3)
     pkg_search_module(SDL2 REQUIRED sdl2)
     pkg_search_module(SDL2MIXER REQUIRED SDL2_mixer)
@@ -148,10 +167,10 @@ if (IS_OS_LINUX OR IS_OS_MAC)
     # Increase warning level
     target_compile_options(${PROJECT_NAME} PUBLIC "-Wall")
 elseif (IS_OS_WINDOWS)
-# https://stackoverflow.com/questions/17126860/cmake-link-precompiled-library-depending-on-os-and-architecture
+    # https://stackoverflow.com/questions/17126860/cmake-link-precompiled-library-depending-on-os-and-architecture
     set(GLFW_FOUND TRUE)
     set(SDL2_FOUND TRUE)
-    
+
     set(GLFW_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/include")
     set(SDL2_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/include/SDL")
     set(FREETYPE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/include")
@@ -159,26 +178,25 @@ elseif (IS_OS_WINDOWS)
     if (${CMAKE_SIZEOF_VOID_P} MATCHES "8")
         set(GLFW_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3dll-x64.lib")
         set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.lib")
-	set(SDL2MIXER_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x64.lib")
-  set(FREETYPE_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/lib/freetype-x64.lib")
+        set(SDL2MIXER_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x64.lib")
+        set(FREETYPE_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/lib/freetype-x64.lib")
+        set(GLFW_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3-x64.dll")
+        set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.dll")
+        set(SDLMIXER_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x64.dll")
+        set(FREETYPE_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/lib/freetype-x64.dll")
 
-	set(GLFW_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3-x64.dll")
-	set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.dll")
-	set(SDLMIXER_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x64.dll")
-  set(FREETYPE_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/lib/freetype-x64.dll")
-
-    else()
+    else ()
         set(GLFW_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3dll-x86.lib")
         set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x86.lib")
-	set(SDL2MIXER_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x86.lib")
-  set(FREETYPE_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/lib/freetype-x86.lib")
+        set(SDL2MIXER_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x86.lib")
+        set(FREETYPE_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/lib/freetype-x86.lib")
 
-	set(GLFW_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3-x86.dll")
-	set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x86.dll")
-	set(SDLMIXER_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x86.dll")
-  set(FREETYPE_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/lib/freetype-x86.dll")
+        set(GLFW_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3-x86.dll")
+        set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x86.dll")
+        set(SDLMIXER_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x86.dll")
+        set(FREETYPE_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/freetype/lib/freetype-x86.dll")
 
-    endif()
+    endif ()
 
     # Copy and rename dlls
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -213,7 +231,7 @@ elseif (IS_OS_WINDOWS)
 
         # use sane exception handling, rather than trying to catch segfaults and allowing resource leaks and UB. Yup... See "Default exception handling behavior" at
         # https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=vs-2019
-        "/EHsc" 
+        "/EHsc"
 
         # turn warning C4239 (non-standard extension that allows temporaries to be bound to
         # non-const references, yay microsoft) into an error

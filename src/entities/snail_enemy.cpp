@@ -16,7 +16,7 @@ ECS_ENTT::Entity SnailEnemy::createSnailEnemy(vec3 position, ECS_ENTT::Scene* sc
 
 	snailEnemyEntity.AddComponent<ShadedMeshRef>(resource);
 
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = snailEnemyEntity.AddComponent<Motion>();
 	motionComponent.position = position - glm::vec3(0.0f, 0.0f, 2.0f);
@@ -29,6 +29,7 @@ ECS_ENTT::Entity SnailEnemy::createSnailEnemy(vec3 position, ECS_ENTT::Scene* sc
 	aiComponent.behavior_tree = root;
 
 	snailEnemyEntity.AddComponent<SnailEnemy>();
+	snailEnemyEntity.AddComponent<CollidableEnemy>();
 
 	return snailEnemyEntity;
 }

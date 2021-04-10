@@ -22,6 +22,8 @@ namespace ECS_ENTT {
 			return m_Scene->m_Registry.valid(m_EntityID);
 		}
 
+		uint32_t GetEntityID() const { return (uint32_t)m_EntityID; }
+
 		template<typename T>
 		T& GetComponent()
 		{

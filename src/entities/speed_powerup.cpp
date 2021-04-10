@@ -14,7 +14,7 @@ ECS_ENTT::Entity SpeedPowerUp::createSpeedPowerUp(vec3 position, ECS_ENTT::Scene
 
 	speedPowerUpEntity.AddComponent<ShadedMeshRef>(resource);
 
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = speedPowerUpEntity.AddComponent<Motion>();
 	motionComponent.position = position;

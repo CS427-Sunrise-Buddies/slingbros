@@ -1,21 +1,23 @@
-name: spiral
+id: spiral
+name: Loopy Loop
 background: cloudy_parallax_background.png
-background_music: music.wav
+weather: sunny
+background_music: bgm_guitar.wav
 player: 0
 map: |
    -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
    -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
    -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
    -- -- -- -- -- -- -- -- -- -- -- -- T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 -- -- -- --
-   -- -- -- -- -- -- -- -- -- -- -- -- T2 -- -- -- -- -- -- -- -- T2 -- -- -- --
-   -- -- -- -- -- -- -- -- -- -- -- -- T2 -- -- -- -- -- -- -- -- T2 -- -- -- --
-   -- -- -- -- -- -- -- -- -- -- -- -- T2 -- -- -- -- -- -- -- -- T2 -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- T2 P3 P3 -- -- -- -- P3 P3 T2 -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- T2 P3 P3 -- -- -- -- P3 P3 T2 -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- T2 -- -- -- -- -- -- P3 P3 T2 -- -- -- --
    -- -- -- -- -- -- -- -- -- -- -- -- T2 -- -- T3 T3 T3 T3 -- -- T2 -- -- -- --
-   -- -- -- -- -- -- -- -- -- -- -- -- T2 -- -- T2 -- T1 T2 P0 -- T2 -- -- -- --
-   -- -- -- -- -- -- -- -- -- -- -- E3 T2 -- -- -- -- -- T2 -- -- T2 -- -- -- --
+   -- -- -- -- -- P3 P3 P3 P3 -- -- E3 T2 -- -- T2 -- T1 T2 P0 -- T2 -- -- -- --
+   -- -- -- -- -- P3 P3 P3 P3 -- -- -- T2 -- -- -- -- -- T2 -- -- T2 -- -- -- --
    -- -- -- -- -- -- -- -- -- -- -- -- T2 T3 T3 T3 T3 T3 T2 -- -- T2 -- -- -- --
-   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T2 -- -- -- --
-   T5 T5 T5 T0 -- -- -- -- -- -- -- -- -- -- -- -- -- T5 T5 T5 T5 T2 -- -- -- --
+   -- -- -- T0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T2 -- -- -- --
+   T5 T5 T5 -- -- -- -- -- -- -- -- -- -- -- -- -- -- T5 T5 T5 T5 T2 -- -- -- --
    T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T2 -- -- -- --
    -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
    -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -452,22 +454,6 @@ entities:
         - 100
         - 1
       can_move: true
-  - type: T0
-    motion:
-      angle: 0
-      position:
-        - 300
-        - 1200
-        - 0
-      velocity:
-        - 0
-        - 0
-        - 0
-      scale:
-        - 100
-        - 100
-        - 1
-      can_move: true
   - type: T5
     motion:
       angle: 0
@@ -521,6 +507,22 @@ entities:
       angle: 0
       position:
         - 2100
+        - 1100
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T0
+    motion:
+      angle: 0
+      position:
+        - 300
         - 1100
         - 0
       velocity:
@@ -708,22 +710,70 @@ entities:
         - 100
         - 1
       can_move: true
-  - type: E3
+  - type: P3
     motion:
       angle: 0
       position:
-        - 1100
+        - 800
         - 900
         - 0
       velocity:
         - 0
-        - 80
+        - 0
         - 0
       scale:
-        - 100
-        - 100
+        - 80
+        - 80
         - 1
-      can_move: false
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 700
+        - 900
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 600
+        - 900
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 500
+        - 900
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
   - type: T2
     motion:
       angle: 0
@@ -818,6 +868,88 @@ entities:
       scale:
         - 100
         - 100
+        - 1
+      can_move: true
+  - type: E3
+    motion:
+      angle: 0
+      position:
+        - 1100
+        - 800
+        - 0
+      velocity:
+        - 0
+        - 80
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: false
+    ai:
+      countdown: 200
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 800
+        - 800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 700
+        - 800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 600
+        - 800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 500
+        - 800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
         - 1
       can_move: true
   - type: T2
@@ -932,6 +1064,38 @@ entities:
         - 100
         - 1
       can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 2000
+        - 600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1900
+        - 600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
   - type: T2
     motion:
       angle: 0
@@ -964,6 +1128,70 @@ entities:
         - 100
         - 1
       can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 2000
+        - 500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1900
+        - 500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1400
+        - 500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1300
+        - 500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
   - type: T2
     motion:
       angle: 0
@@ -994,6 +1222,70 @@ entities:
       scale:
         - 100
         - 100
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 2000
+        - 400
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1900
+        - 400
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1400
+        - 400
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1300
+        - 400
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
         - 1
       can_move: true
   - type: T2

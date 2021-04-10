@@ -11,7 +11,7 @@ ECS_ENTT::Entity SandTile::createSandTile(vec3 position, ECS_ENTT::Scene* scene)
 	ECS_ENTT::Entity sandTileEntity = scene->CreateEntity("Sand Tile");
 	sandTileEntity.AddComponent<ShadedMeshRef>(meshResource);
 	ShadedMeshRef& resource = sandTileEntity.GetComponent<ShadedMeshRef>();
-	resource.reference_to_cache->texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.reference_to_cache->texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = sandTileEntity.AddComponent<Motion>();
 	motionComponent.position = position;

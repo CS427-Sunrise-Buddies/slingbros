@@ -2,7 +2,7 @@
 #include "render.hpp"
 
 
-ECS_ENTT::Entity Screen::createScreen(const std::string& texture_name, vec2 pos, ECS_ENTT::Scene* scene)
+ECS_ENTT::Entity GameScreen::createScreen(const std::string& texture_name, vec2 pos, ECS_ENTT::Scene* scene)
 {
 	ShadedMesh& meshResource = cache_resource(texture_name);
 	if (meshResource.effect.program.resource == 0) {
@@ -12,7 +12,7 @@ ECS_ENTT::Entity Screen::createScreen(const std::string& texture_name, vec2 pos,
 	ECS_ENTT::Entity screenEntity = scene->CreateEntity(texture_name);
 	screenEntity.AddComponent<ShadedMeshRef>(meshResource);
 	auto& resource = screenEntity.GetComponent<ShadedMeshRef>();
-	resource.reference_to_cache->texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.reference_to_cache->texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	auto& motionComponent = screenEntity.AddComponent<Motion>();
 	motionComponent.position = vec3(pos.x, pos.y, 0.f);

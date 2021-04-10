@@ -54,17 +54,23 @@ int main()
 		particleSystem->grass_collision_listener(entity_i, entity_j, hit_wall);
 		particleSystem->dirt_collision_listener(entity_i, entity_j, hit_wall);
 		particleSystem->lava_block_collision_listener(entity_i, entity_j, hit_wall);
+		particleSystem->beehive_collision_listener(entity_i, entity_j, hit_wall);
+	});
+
+	world.attach([&particleSystem](ECS_ENTT::Scene* scene) {
+		particleSystem->weather_listener(scene);
 	});
 
 	// Set all states to default
 	world.restart();
 	auto time = Clock::now();
 	
-	ECS_ENTT::Scene* menuScene = WorldSystem::MenuInit(WINDOW_SIZE_IN_GAME_UNITS);
-	WorldSystem::ActiveScene = menuScene;
+	ECS_ENTT::Scene* menuScene = WorldSystem::MenuInit();
 	Camera* activeCamera = menuScene->GetCamera();
 	
 	WorldSystem::HelpInit();
+
+	WorldSystem::FinaleInit();
 
 	auto freeze_time = DebugSystem::freeze_delay_ms;
 	// Variable timestep loop
@@ -80,6 +86,11 @@ int main()
 		time = now;
 
 		world.HandleCameraMovement(activeCamera, elapsed_ms);
+
+		if (world.getIsLevelRestart()) {
+			world.restart();
+			world.setIsLevelRestart(false);
+		}
 		
 		if (!DebugSystem::in_freeze_mode) {
 			DebugSystem::clearDebugComponents();

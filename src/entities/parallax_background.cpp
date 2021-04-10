@@ -23,7 +23,7 @@ ECS_ENTT::Entity ParallaxBackground::createBackground(ECS_ENTT::Scene* scene, st
 	backgroundEntity.AddComponent<ShadedMeshRef>(resource);
 
 	// Reset the SlingBro colour when created
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	// Setting up the position.
 	Motion& motionComponent = backgroundEntity.AddComponent<Motion>();

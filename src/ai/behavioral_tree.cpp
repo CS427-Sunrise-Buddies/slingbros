@@ -17,12 +17,12 @@ namespace BehaviorTree
 		child->init(e);
 	}
 
-	State Sequence::process(ECS_ENTT::Entity e)
+	State Sequence::process(ECS_ENTT::Entity e, float elapsed_ms)
 	{
 		assert(m_index < m_children.size());
 		const auto& child = m_children[m_index];
 		assert(child);
-		State state = child->process(e);
+		State state = child->process(e, elapsed_ms);
 
 		if (state == State::Successful) {
 			++m_index;
@@ -55,12 +55,12 @@ namespace BehaviorTree
 		child->init(e);
 	}
 
-	State Selector::process(ECS_ENTT::Entity e)
+	State Selector::process(ECS_ENTT::Entity e, float elapsed_ms)
 	{
 		assert(m_index < m_children.size());
 		const auto& child = m_children[m_index];
 		assert(child);
-		State state = child->process(e);
+		State state = child->process(e, elapsed_ms);
 
 		if (state == State::Successful) {
 			// Succeed if any of the children succeed

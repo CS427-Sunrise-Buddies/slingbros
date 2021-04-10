@@ -19,7 +19,7 @@ namespace BehaviorTree
 		virtual void init(ECS_ENTT::Entity e)
 		{};
 
-		virtual State process(ECS_ENTT::Entity e) = 0;
+		virtual State process(ECS_ENTT::Entity e, float elapsed_ms) = 0;
 	};
 
 	// Composite node that succeeds when ALL children succeed
@@ -31,7 +31,7 @@ namespace BehaviorTree
 	private:
 		void init(ECS_ENTT::Entity e) override;
 
-		State process(ECS_ENTT::Entity e) override;
+		State process(ECS_ENTT::Entity e, float elapsed_ms) override;
 
 		size_t m_index;
 		std::vector<Node*> m_children;
@@ -46,7 +46,7 @@ namespace BehaviorTree
 	private:
 		void init(ECS_ENTT::Entity e) override;
 
-		State process(ECS_ENTT::Entity e) override;
+		State process(ECS_ENTT::Entity e, float elapsed_ms) override;
 
 		size_t m_index;
 		std::vector<Node*> m_children;

@@ -17,7 +17,7 @@ ECS_ENTT::Entity WindyGrass::createGrass(vec3 position, ECS_ENTT::Scene* scene) 
 	windyGrassEntity.AddComponent<ShadedMeshRef>(resource);
 
 	// Reset the SlingBro colour when created
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	// Setting up the position.
 	Motion& motionComponent = windyGrassEntity.AddComponent<Motion>();

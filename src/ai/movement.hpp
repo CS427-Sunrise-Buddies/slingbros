@@ -10,7 +10,7 @@ public:
 private:
 	void init(ECS_ENTT::Entity e) override;
 
-	BehaviorTree::State process(ECS_ENTT::Entity e) override;
+	BehaviorTree::State process(ECS_ENTT::Entity e, float elapsed_ms) override;
 
 	int stepsBeforeTurn;
 	int n;
@@ -23,7 +23,7 @@ public:
 private:
 	void init(ECS_ENTT::Entity e) override;
 
-	BehaviorTree::State process(ECS_ENTT::Entity e) override;
+	BehaviorTree::State process(ECS_ENTT::Entity e, float elapsed_ms) override;
 
 	int stepsBeforeTurn;
 	int n;

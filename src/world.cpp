@@ -3,12 +3,10 @@
 
 // Header
 #include "world.hpp"
-#include "physics.hpp"
 #include "debug.hpp"
 #include "render_components.hpp"
 #include "animation.hpp" 
 #include "loader/level_manager.hpp"
-#include "text.hpp"
 
 #include <glm/ext/matrix_transform.hpp>
 
@@ -16,25 +14,36 @@
 #include <string.h>
 #include <cassert>
 #include <fstream>
-#include <sstream>
 #include <iostream>
 #include <entities/windy_grass.hpp>
 #include <entities/grassy_tile.hpp>
 #include <entities/lava_tile.hpp>
 #include <entities/screen.hpp>
+#include <entities/projectedPath.hpp>
+#include <entities/sand_tile.hpp>
+#include <entities/glass_tile.hpp>
 
 // Entities
 #include "entities/powerup.hpp"
 #include "entities/speed_powerup.hpp"
 #include "entities/slingbro.hpp"
 #include "entities/projectile.hpp"
+#include "entities/helge_projectile.hpp"
 #include "entities/button.hpp"
 #include "entities/goal_tile.hpp"
 #include "entities/snail_enemy.hpp"
 #include "entities/start_tile.hpp"
 #include "entities/size_up_powerup.hpp"
 #include "entities/size_down_powerup.hpp"
+#include "entities/mass_up_powerup.hpp"
+#include "entities/coin_powerup.hpp"
 #include "entities/dialogue_box.hpp"
+#include "entities/spike_hazard.hpp"
+#include "entities/hazard_tile_spike.hpp"
+#include "entities/bird_enemy.hpp"
+#include "entities/basic_enemy.hpp"
+#include "entities/blueb_enemy.hpp"
+#include "menu_system.hpp"
 
 // Game configuration
 ECS_ENTT::Scene* WorldSystem::ActiveScene = nullptr;
@@ -44,25 +53,19 @@ std::stack<ECS_ENTT::Scene*> WorldSystem::PrevScenes;
 ECS_ENTT::Scene* WorldSystem::GameScene = nullptr;
 ECS_ENTT::Scene* WorldSystem::MenuScene = nullptr;
 ECS_ENTT::Scene* WorldSystem::HelpScene = nullptr;
+ECS_ENTT::Scene* WorldSystem::FinaleScene = nullptr;
 
-
-const unsigned int WorldSystem::num_players = MAX_NUM_PLAYERS;
 bool WorldSystem::is_ai_turn = true;
 
 bool isLoadNextLevel = false;
+bool isLevelRestart = false;
 
 typedef ECS_ENTT::Entity (*fn)(vec3, ECS_ENTT::Scene*);
-typedef std::map<int, fn> SlingBroFunctionMap;
-const SlingBroFunctionMap slingBroFunctions =
-		{
-				{0, OrangeBro::createOrangeSlingBro},
-				{1, PinkBro::createPinkSlingBro}
-		};
+const std::vector<fn> slingBroFunctions = { SlingBro::createOrangeSlingBro, SlingBro::createPinkSlingBro };
 
 // Create the slingBro world
 // Note, this has a lot of OpenGL specific things, could be moved to the renderer; but it also defines the callbacks to the mouse and keyboard. That is why it is called here.
-WorldSystem::WorldSystem(ivec2 window_size_px) :
-		levels(LevelManager::get_levels())
+WorldSystem::WorldSystem(ivec2 window_size_px)
 {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
@@ -139,7 +142,15 @@ WorldSystem::WorldSystem(ivec2 window_size_px) :
 	helpCamera->SetPosition(MENU_CAMERA_POSITION);
 	helpCamera->SetPerspective(glm::radians(60.0f), 0.01f, MENU_CAMERA_PERSPECTIVE_FAR_BOUND);
 	helpCamera->SetFixed(true);
-	
+
+	WorldSystem::FinaleScene = new ECS_ENTT::Scene("Congratulations!", {10, 10});
+	// Initialize finale camera properties
+	Camera* finaleCamera = WorldSystem::FinaleScene->GetCamera();
+	finaleCamera->SetViewportSize(WINDOW_SIZE_IN_PX.x, WINDOW_SIZE_IN_PX.y);
+	finaleCamera->SetPosition(MENU_CAMERA_POSITION);
+	finaleCamera->SetPerspective(glm::radians(60.0f), 0.01f, MENU_CAMERA_PERSPECTIVE_FAR_BOUND);
+	finaleCamera->SetFixed(true);
+
 	// Initialize Game on the Menu scene
 	WorldSystem::ActiveScene = MenuScene;
 }
@@ -149,14 +160,20 @@ WorldSystem::~WorldSystem()
 	// Destroy music components
 	if (background_music != nullptr)
 		Mix_FreeMusic(background_music);
+	if (win_music != nullptr)
+		Mix_FreeMusic(win_music);
 	if (salmon_dead_sound != nullptr)
 		Mix_FreeChunk(salmon_dead_sound);
 	if (salmon_eat_sound != nullptr)
 		Mix_FreeChunk(salmon_eat_sound);
 	if (yeehaw_sound != nullptr)
 		Mix_FreeChunk(yeehaw_sound);
+	if (ugh_sound != nullptr)
+		Mix_FreeChunk(ugh_sound);
 	if (poppin_click_sound != nullptr)
 		Mix_FreeChunk(poppin_click_sound);
+	if (disabled_click_sound != nullptr)
+		Mix_FreeChunk(disabled_click_sound);
 	if (transport_sound != nullptr)
 		Mix_FreeChunk(transport_sound);
 	if (short_grass_sound != nullptr)
@@ -179,16 +196,19 @@ WorldSystem::~WorldSystem()
 		Mix_FreeChunk(squeak_sound);
 	if (short_monster_sound != nullptr)
 		Mix_FreeChunk(short_monster_sound);
+	if (sand_skidding_sound != nullptr)
+		Mix_FreeChunk(sand_skidding_sound);
+	if (tapping_glass_sound != nullptr)
+		Mix_FreeChunk(tapping_glass_sound);
+	if (snow_steppin_sound != nullptr)
+		Mix_FreeChunk(snow_steppin_sound);
 	Mix_CloseAudio();
-
-	// TODO using EnTT
-	// Destroy all created components
-	//ECS::ContainerInterface::clear_all_components();
 
 	// Free memory of all of the game's scenes
 	delete (GameScene);
 	delete (HelpScene);
 	delete (MenuScene);
+	delete (FinaleScene);
 
 	// Close the window
 	glfwDestroyWindow(window);
@@ -207,9 +227,12 @@ void WorldSystem::init_audio()
 	salmon_dead_sound = Mix_LoadWAV(audio_path("salmon_dead.wav").c_str());
 	salmon_eat_sound = Mix_LoadWAV(audio_path("salmon_eat.wav").c_str());
 
-	background_music = Mix_LoadMUS(audio_path("background_music.wav").c_str());
+	background_music = Mix_LoadMUS(audio_path("bgm_relax.wav").c_str());
+	win_music = Mix_LoadMUS(audio_path("game_win.wav").c_str());
 	yeehaw_sound = Mix_LoadWAV(audio_path("yeehaw.wav").c_str());
-	poppin_click_sound = Mix_LoadWAV(audio_path("pop.wav").c_str());
+	ugh_sound = Mix_LoadWAV(audio_path("ugh.wav").c_str());
+	poppin_click_sound = Mix_LoadWAV(audio_path("poppin_click.wav").c_str());
+	disabled_click_sound = Mix_LoadWAV(audio_path("disabled_click.wav").c_str());
 	transport_sound = Mix_LoadWAV(audio_path("long_magic.wav").c_str());
 	short_grass_sound = Mix_LoadWAV(audio_path("short_grass.wav").c_str());
 	shorter_grass_sound = Mix_LoadWAV(audio_path("shorter_grass.wav").c_str());
@@ -221,45 +244,31 @@ void WorldSystem::init_audio()
 	snail_monster_sound = Mix_LoadWAV(audio_path("snail_monster.wav").c_str());
 	squeak_sound = Mix_LoadWAV(audio_path("squeak.wav").c_str());
 	short_monster_sound = Mix_LoadWAV(audio_path("short_monster.wav").c_str());
-
-
-//	if (salmon_dead_sound == nullptr || salmon_eat_sound == nullptr ||
-//		background_music == nullptr || happy_noises_sound == nullptr || poppin_click_sound == nullptr ||
-//		transport_sound == nullptr)
-//		throw std::runtime_error("Failed to load sounds make sure the data directory is present: " +
-//								 audio_path("music.wav") +
-//								 audio_path("salmon_dead.wav") +
-//								 audio_path("salmon_eat.wav"));
+	sand_skidding_sound = Mix_LoadWAV(audio_path("skidding_sand.wav").c_str());
+	tapping_glass_sound = Mix_LoadWAV(audio_path("glass_tap.wav").c_str());
+	snow_steppin_sound = Mix_LoadWAV(audio_path("snow_steppin.wav").c_str());
+	Mix_VolumeChunk(sand_skidding_sound, 60);
+	Mix_VolumeChunk(tapping_glass_sound, 30);
+	Mix_VolumeChunk(snow_steppin_sound, 30);
 }
 
 
-ECS_ENTT::Scene* WorldSystem::MenuInit(vec2 window_size_in_game_units)
+ECS_ENTT::Scene* WorldSystem::MenuInit()
 {
-	ECS_ENTT::Scene* menuScene = WorldSystem::MenuScene;
-	const glm::vec2 screenPosition = vec2(MENU_CAMERA_POSITION);
-	Screen::createScreen(TEXTURE_MENU, screenPosition, menuScene);
-
-	// todo(atsang): implement new game logic
-	//vec2 newButtonPos = vec2(MENU_CAMERA_POSITION);
-	vec2 startButtonPos = vec2(MENU_CAMERA_POSITION);
-	vec2 quitButtonPos = vec2(MENU_CAMERA_POSITION.x, MENU_CAMERA_POSITION.y + BUTTON_OFFSET);
-
-	//Button::createButton(newButtonPos, Button::MENU_BUTTON_SCALE, BUTTON_NAME_NEW, menuScene);
-	Button::createButton(startButtonPos, Button::MENU_BUTTON_SCALE, BUTTON_NAME_START, menuScene);
-	Button::createButton(quitButtonPos,  Button::MENU_BUTTON_SCALE, BUTTON_NAME_QUIT, menuScene);
-	Button::createButton(Button::HELP_BUTTON_POSITION,  Button::HELP_BUTTON_SCALE, BUTTON_NAME_HELP, menuScene);
-
-	return menuScene;
+	MenuSystem::init_start_menu(WorldSystem::MenuScene);
+	return WorldSystem::MenuScene;
 }
 
 ECS_ENTT::Scene* WorldSystem::HelpInit()
 {
-	ECS_ENTT::Scene* helpScene = WorldSystem::HelpScene;
-	const glm::vec2 helpEntityPosition = MENU_CAMERA_POSITION;
-	ECS_ENTT::Entity helpScreenEntity = Screen::createScreen(HELP_TEXTURES.at(0), helpEntityPosition, helpScene);
-	helpScreenEntity.AddComponent<Help>();
+	MenuSystem::init_help_menu(WorldSystem::HelpScene);
+	return WorldSystem::HelpScene;
+}
 
-	return helpScene;
+ECS_ENTT::Scene* WorldSystem::FinaleInit()
+{
+	MenuSystem::init_finale_menu(WorldSystem::FinaleScene);
+	return WorldSystem::FinaleScene;
 }
 
 // Update our game world
@@ -270,8 +279,9 @@ ECS_ENTT::Scene* WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_un
 	title_ss << ActiveScene->m_Name;
 	if (is_game_scene())
 	{
+		runWeatherCallbacks();
 		if (is_ai_turn) {
-			title_ss << " | Turn: AI";
+			title_ss << " | Turn: Enemy";
 		} else {
 			auto turn = get_current_player().GetComponent<Turn>();
 			auto countdown = ceil(turn.countdown / 100.f) / 10.f;
@@ -280,52 +290,150 @@ ECS_ENTT::Scene* WorldSystem::step(float elapsed_ms, vec2 window_size_in_game_un
 	}
 	glfwSetWindowTitle(window, title_ss.str().c_str());
 
-	
-	if (ActiveScene->GetDialogueBoxNames().size() > 0 && !ActiveScene->is_in_dialogue) {
+	for (auto entityID : GameScene->m_Registry.view<PlayerProfile>())
+	{
+		Text& text = GameScene->m_Registry.get<Text>(entityID);
+		auto profile = GameScene->m_Registry.get<PlayerProfile>(entityID);
+		int points = 0;
+		text.colour = { 0.f, 0.f, 0.f };
+
+		switch (profile.broType)
+		{
+			case BroType::ORANGE:
+			{
+				auto orange = GameScene->m_Registry.view<OrangeBro>()[0];
+				points = GameScene->m_Registry.get<Turn>(orange).points;
+				if (!is_ai_turn && orange == get_current_player())
+				{
+					text.colour = { 0.87f, 0.48f, 0.17f };
+				}
+				break;
+			}
+			case BroType::PINK:
+			{
+				auto pink = GameScene->m_Registry.view<PinkBro>()[0];
+				points = GameScene->m_Registry.get<Turn>(pink).points;
+				if (!is_ai_turn && pink == get_current_player())
+				{
+					text.colour = { 1.f, 0.51f, 0.77f };
+				}
+			}
+		}
+		text.content = profile.playerName + ": " + std::to_string(points);
+	}
+
+	if (!ActiveScene->GetDialogueBoxNames().empty() && !ActiveScene->is_in_dialogue) {
 		ActiveScene->is_in_dialogue = true;
 		handleDialogue();
 	}
-	
-	// End player turn
-	if (is_game_scene() && should_end_turn(elapsed_ms))
+
+	if (is_game_scene())
 	{
-		current_player_effects_tick();
-		Mix_PlayChannel(-1, squeak_sound, 0);
+		// End player turn
+		if (should_end_turn(elapsed_ms))
+		{
+			current_player_effects_tick();
+			Mix_PlayChannel(-1, squeak_sound, 0);
 
-		set_next_player();
-	}
+			set_next_player();
+		}
+		else
+		{
+			update_projected_path(elapsed_ms);
+		}
 
-	if (is_moving(get_current_player())) {
-		point_camera_at_current_player();
+		// Point camera at the moving bro
+		if (is_moving(get_current_player()))
+		{
+			point_camera_at_current_player();
+		}
 	}
 
 	// TODO Removing out of screen entities (for the appropriate entities like projectiles, for example)
 
+	// Tick all deformation component timers
+	auto deformationView = ActiveScene->m_Registry.view<Deformation>();
+	for (auto entityID : deformationView) {
+		ECS_ENTT::Entity deformedEntity = ECS_ENTT::Entity(entityID, WorldSystem::ActiveScene);
+		Deformation& deformation = deformedEntity.GetComponent<Deformation>();
+		deformation.timeRemaining -= elapsed_ms;
+		if (deformation.timeRemaining <= 0)
+			deformedEntity.RemoveComponent<Deformation>();
+	}
+
+	// Tick all projectile component timers
+	auto projectileView = ActiveScene->m_Registry.view<Projectile>();
+	for (auto entityID : projectileView) {
+		ECS_ENTT::Entity projectileEntity = ECS_ENTT::Entity(entityID, WorldSystem::ActiveScene);
+		Projectile& projectile = projectileEntity.GetComponent<Projectile>();
+		projectile.timeRemaining -= elapsed_ms;
+		if (projectile.timeRemaining <= 0)
+			ActiveScene->m_Registry.destroy(entityID);
+	}
+
+	// Tick all Helge projectile component timers
+	auto helgeProjectileView = ActiveScene->m_Registry.view<HelgeProjectile>();
+	for (auto entityID : helgeProjectileView) {
+		ECS_ENTT::Entity helgeProjectileEntity = ECS_ENTT::Entity(entityID, WorldSystem::ActiveScene);
+		HelgeProjectile& helgeProjectile = helgeProjectileEntity.GetComponent<HelgeProjectile>();
+		helgeProjectile.timeRemaining -= elapsed_ms;
+		if (helgeProjectile.timeRemaining <= 0)
+			ActiveScene->m_Registry.destroy(entityID);
+	}
+
 	return ActiveScene;
 }
 
+void WorldSystem::update_projected_path(float elapsed_ms) {
+	auto slingBro = get_current_player();
+	auto& turn = slingBro.GetComponent<Turn>();
+	if (slingBro.GetComponent<SlingMotion>().isClicked)
+	{
+		float minOpacity = 0.4;
+		for (auto& entity : ActiveScene->m_Registry.view<ProjectedPath>())
+		{
+			auto star = ECS_ENTT::Entity(entity, GameScene);
+			auto& shader = star.GetComponent<ShadedMeshRef>();
+			float opacityShrinkScale = turn.path_fade_ms / PROJECTED_PATH_FADE_COUNTDOWN;
+
+			float scale = star.GetComponent<ProjectedPath>().scale;
+
+			shader.reference_to_cache->texture.color.w = opacityShrinkScale + minOpacity;
+			opacityShrinkScale = max(opacityShrinkScale, minOpacity);
+			star.GetComponent<Motion>().scale = { opacityShrinkScale * scale,
+												  opacityShrinkScale * scale,
+												  0 };
+		}
+
+		// update countdown and path for projected path
+		if (turn.path_fade_ms < 0.f)
+		{
+			turn.path_fade_ms = PROJECTED_PATH_FADE_COUNTDOWN;
+		}
+		else
+		{
+			turn.path_fade_ms -= elapsed_ms;
+		}
+	}
+}
 
 void WorldSystem::handleDialogue() {
-	// TODO disable rotation
 	get_current_player().GetComponent<SlingMotion>().canClick = false;
 	ActiveScene->GetCamera()->SetFixed(true);
 	
 	// Remove previous box
-	for (auto entity : ActiveScene->m_Registry.view<DialogueBox>()) {
-		ActiveScene->m_Registry.destroy(entity);
-	}
-	
+	RemoveAllEntitiesWithComponent<DialogueBox>();
+
 	std::queue<std::string> dialogue_boxes = ActiveScene->GetDialogueBoxNames();
-	if (dialogue_boxes.size() > 0 && ActiveScene->is_in_dialogue) {
+	if (!dialogue_boxes.empty() && ActiveScene->is_in_dialogue) {
 		// Create new box
 		std::string current_box = dialogue_boxes.front();
 		ActiveScene->PopDialogueBoxNames();
 		DialogueBox::createDialogueBox(current_box, ActiveScene);
 	} else {
 		ActiveScene->is_in_dialogue = false;
-		for (auto entity : ActiveScene->m_Registry.view<DialogueBox>()) {
-			ActiveScene->m_Registry.destroy(entity);
-		}
+		RemoveAllEntitiesWithComponent<DialogueBox>();
+
 		ActiveScene->current_dialogue_box = "";
 		get_current_player().GetComponent<SlingMotion>().canClick = true;
 		ActiveScene->GetCamera()->SetFixed(false);
@@ -347,12 +455,26 @@ void WorldSystem::current_player_effects_tick() {
 			sizeChangedComponent.turnsRemaining -= 1;
 		}
 	}
+
+	if (current_player.HasComponent<MassChanged>()) {
+		auto& massChangedComponent = current_player.GetComponent<MassChanged>();
+
+		if (massChangedComponent.turnsRemaining <= 0) {
+			current_player.RemoveComponent<MassChanged>();
+			auto& massComponent = current_player.GetComponent<Mass>();
+			massComponent.value = 1.0f;
+		}
+		else {
+			massChangedComponent.turnsRemaining -= 1;
+		}
+	}
 }
 
 void WorldSystem::remove_all_entities() {
 	GameScene->m_Registry.each([](const auto entityID, auto &&...) {
 		GameScene->m_Registry.destroy(entityID);
 	});
+	ParticleSystem::GetInstance()->clearBeeSwarms();
 }
 
 template<typename ComponentType>
@@ -371,28 +493,50 @@ void WorldSystem::setIsLoadNextLevel(bool b) {
 	isLoadNextLevel = b;
 }
 
+bool WorldSystem::getIsLevelRestart() {
+	return isLevelRestart;
+}
+
+void WorldSystem::setIsLevelRestart(bool b) {
+	isLevelRestart = b;
+}
+
 void WorldSystem::load_next_level()
 {
 	unsigned int levelNum = get_level_number() + 1;
-	if (levelNum == levels.size()) {
+	if (levelNum >= levels.size()) {
+		printf("You won!\n");
+
+		// Clear history stack
+		while (!PrevScenes.empty())
+		{
+			PrevScenes.pop();
+		}
+
+		// Switch to Finale scene
+		PrevScenes.push(ActiveScene);
+		ActiveScene = FinaleScene;
+
+		// Play some cool music
+		Mix_PlayMusic(win_music, 0);
 		return;
 	}
 
 	std::cout << "loading next level\n";
 
-	int turnPoints[num_players];
+	std::vector<int> turnPoints(WorldSystem::GameScene->GetNumPlayers(), 0);
 	reward_current_player();
-	save_turn_point_information(turnPoints);
+	save_turn_point_information(&turnPoints);
 
-	unsigned int next_player_idx = set_next_player();
+	// The first player to go on the next level
+	set_next_player();
+
 	// Remove all old entities in the scene
 	remove_all_entities();
 
 	// Load the next level
 	const std::string level_file_path = levels_path(yaml_file(levels[levelNum]));
-	load_level(level_file_path, true);
-	ActiveScene = GameScene;
-	ActiveScene->SetPlayer(next_player_idx);
+	load_level(level_file_path, GameScene->GetNumPlayers());
 
 	// Current player reached the goal tile to get
 	// to this level so increment to the next player
@@ -409,19 +553,22 @@ void WorldSystem::restart() // notes: like Game::init
 	// Remove all old entities in the scene
 	remove_all_entities();
 
-	// todo(atsang): Remove in M4 submission
-	//  Example usage of create_level as a dev tool
-	//  1. Clone data/create/tutorial.yaml to make a new map
-	//  2. Call create_level on the new file to generate the level yaml file
-	//  3. Run the game
-	//  4. Copy over the generated level yaml file from the build directory to the repo
-	//  5. Add the file name (minus the .yaml extension) to data/config/config.yaml in whatever order
+	// Example usage of create_level as a dev tool
+	// 1. Clone data/create/tutorial.yaml to make a new map
+	// 2. Call create_level on the new file to generate the level yaml file
+	// 3. Run the game
+	// 4. Copy over the generated level yaml file from the build directory to the repo
+	// 5. Add the file name (minus the .yaml extension) to data/config/config.yaml in whatever order
 	// LevelManager::create_level("YourNewLevel.yaml")
 	// Uncomment below to regenerate all levels
-    // for (const auto& level_name : levels) LevelManager::create_level(yaml_file(level_name));
+	// for (const auto& level_name : LevelManager::get_levels(NUM_PLAYERS_1)) LevelManager::create_level(yaml_file(level_name));
+	// for (const auto& level_name : LevelManager::get_levels(NUM_PLAYERS_2)) LevelManager::create_level(yaml_file(level_name));
 
-	// Load the scene
-	WorldSystem::reload_level();
+	// Reload the current level
+	if (is_game_scene())
+	{
+		WorldSystem::load_level(levels_path(yaml_file(levels[get_level_number()])), GameScene->GetNumPlayers());
+	}
 }
 
 void WorldSystem::powerup_collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, ECS_ENTT::Scene* gameScene) {
@@ -430,25 +577,247 @@ void WorldSystem::powerup_collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT
 	if (entity_j.HasComponent<SpeedPowerUp>()) {
 		SpeedPowerUp& speed_power_up = entity_j.GetComponent<SpeedPowerUp>();
 		speed_power_up.applyPowerUp(entity_i);
-	}
-
-	if (entity_j.HasComponent<SizeUpPowerUp>()) {
+	} else if (entity_j.HasComponent<SizeUpPowerUp>()) {
 		SizeUpPowerUp& size_up_power_up = entity_j.GetComponent<SizeUpPowerUp>();
 		size_up_power_up.applyPowerUp(entity_i);
-	}
-
-	if (entity_j.HasComponent<SizeDownPowerUp>()) {
+	} else if (entity_j.HasComponent<SizeDownPowerUp>()) {
 		SizeDownPowerUp& size_down_power_up = entity_j.GetComponent<SizeDownPowerUp>();
 		size_down_power_up.applyPowerUp(entity_i);
+	} else if (entity_j.HasComponent<CoinPowerUp>()) {
+		CoinPowerUp& coin_power_up = entity_j.GetComponent<CoinPowerUp>();
+		coin_power_up.applyPowerUp(entity_i);
+	} else if (entity_j.HasComponent<MassUpPowerUp>()) {
+		MassUpPowerUp& mass_up_power_up = entity_j.GetComponent<MassUpPowerUp>();
+		mass_up_power_up.applyPowerUp(entity_i);
 	}
 
 	gameScene->m_Registry.destroy(entity_j);
+}
+
+void WorldSystem::collidable_enemy_collision_listener(ECS_ENTT::Entity slingBroEntity, ECS_ENTT::Entity enemyEntity)
+{
+	Motion& slingBroMotion = slingBroEntity.GetComponent<Motion>();
+	Motion& enemyMotion = enemyEntity.GetComponent<Motion>();
+
+	// Don't count collisions when it is the enemy's turn
+	if (is_ai_turn)
+		return;
+
+	auto& collidingBrosTurn = slingBroEntity.GetComponent<Turn>();
+	collidingBrosTurn.subPoints(POINTS_LOST_UPON_ENEMY_COLLISION);
+
+	// Knock the player away from the enemy and emit a "blood spray" particle effect 
+	glm::vec2 dispVecNorm = glm::vec2(glm::normalize(enemyMotion.position - slingBroMotion.position));
+	slingBroMotion.position -= 5.0f * glm::vec3(dispVecNorm.x, dispVecNorm.y, 0.0f);
+	auto& broVelocity = slingBroMotion.velocity;
+	float broSpeed = glm::length(broVelocity);
+	broVelocity = broSpeed * -glm::vec3(dispVecNorm.x, dispVecNorm.y, 0.0f);
+	broVelocity.x += (0.5f - Random::Float()) * MAX_VELOCITY / 2.0f;
+	if (broSpeed > MAX_VELOCITY)
+		broVelocity = (broVelocity / broSpeed) * MAX_VELOCITY;
+
+	// Check orientation of character from the enemy and set knockback direction, particle velocity, & deformations correctly
+	float angle = atan(dispVecNorm.y, dispVecNorm.x); // angle in radians from spike tile to slingbro
+	glm::vec3 particleVelocity = glm::vec3(1.0f);
+	float particleSpeed = 0.1f;
+	if (angle > -PI / 4 && angle <= PI / 4) // bro to the right 
+		particleVelocity = glm::vec3(-particleSpeed, 0.0f, 0.0f);
+	else if (angle > PI / 4 && angle <= 3 * PI / 4)	// bro below 
+		particleVelocity = glm::vec3(0.0f, -particleSpeed, 0.0f);
+	else if (angle > 3 * PI / 4 && angle <= 5 * PI / 4)	// bro to the left 
+		particleVelocity = glm::vec3(particleSpeed, 0.0f, 0.0f);
+	else // bro above 
+		particleVelocity = glm::vec3(0.0f, particleSpeed, 0.0f);
+
+	// Deform the bro
+	if (!slingBroEntity.HasComponent<Deformation>())
+		slingBroEntity.AddComponent<Deformation>(0.8f, 1.2f, angle, 100.0f);
+	Mix_PlayChannel(-1, ugh_sound, 0);
+
+	// Emit blood spray particles
+	ParticleSystem* particleSystem = ParticleSystem::GetInstance();
+	ParticleProperties particle;
+	glm::vec2 particleOffset = glm::vec2(dispVecNorm.x * (slingBroMotion.scale.x / 1.4f), dispVecNorm.y * (slingBroMotion.scale.y / 1.4f));
+	particle.position = slingBroMotion.position; +glm::vec3(particleOffset.x, particleOffset.y, 0.0f);
+	particle.velocity = broVelocity / (100.0f * broSpeed);
+	particle.velocityVariation = glm::vec3(0.25f, 0.1f, 0.2f);
+	particle.colourBegin = glm::vec4(0.9f, 0.1f, 0.1f, 1.0f);
+	particle.colourEnd = glm::vec4(0.5f, 0.0f, 0.0f, 0.0f);
+	particle.sizeBegin = 8.0f;
+	particle.sizeEnd = 0.1f;
+	particle.sizeVariation = 2.0f;
+	particle.lifeTimeMs = 2000.0f;
+	for (int i = 0; i < 100; i++)
+		particleSystem->Emit(particle);
+}
+
+void WorldSystem::ground_spike_collision_listener(ECS_ENTT::Entity slingBroEntity, ECS_ENTT::Entity groundSpikeEntity)
+{
+	Motion& slingBroMotion = slingBroEntity.GetComponent<Motion>();
+	Motion& groundSpikeMotion = groundSpikeEntity.GetComponent<Motion>();
+
+	auto& collidingBrosTurn = slingBroEntity.GetComponent<Turn>();
+	collidingBrosTurn.subPoints(POINTS_LOST_UPON_SPIKE_COLLISION);
+
+	// Knock the player away from the spike and emit a "blood spray" particle effect 
+	glm::vec2 dispVecNorm = glm::vec2(glm::normalize(groundSpikeMotion.position - slingBroMotion.position));
+	slingBroMotion.position -= 1.0f * glm::vec3(dispVecNorm.x, dispVecNorm.y, 0.0f);
+	auto& broVelocity = slingBroMotion.velocity;
+	float broSpeed = glm::length(broVelocity);
+	if (broVelocity.y > 0.0f)
+		broVelocity.y *= -1.0f - (Random::Float() / 2.0f);
+	broVelocity.x *= -1.0f + ((0.5f - Random::Float()) / 2.0f);
+	if (abs(broVelocity.x) < 200.0f)
+		broVelocity.x += (0.5f - Random::Float()) * 1.5f * glm::length(broVelocity);
+	if (broSpeed > MAX_VELOCITY)
+		broVelocity = (broVelocity / broSpeed) * MAX_VELOCITY;
+
+	// Deform the character
+	float angle = atan(dispVecNorm.y, dispVecNorm.x); // angle in radians from ground spike to slingbro
+	if (!slingBroEntity.HasComponent<Deformation>())
+		slingBroEntity.AddComponent<Deformation>(0.8f, 1.2f, angle, 100.0f);
+	Mix_PlayChannel(-1, ugh_sound, 0);
+
+	// Emit blood spray particles
+	ParticleSystem* particleSystem = ParticleSystem::GetInstance();
+	ParticleProperties particle;
+	glm::vec2 particleOffset = glm::vec2(dispVecNorm.x * (slingBroMotion.scale.x / 1.4f), dispVecNorm.y * (slingBroMotion.scale.y / 1.4f));
+	particle.position = slingBroMotion.position + glm::vec3(particleOffset.x, particleOffset.y, 0.0f);
+	particle.velocity = glm::vec3(0.0f, -0.05f, 0.0f);
+	particle.velocityVariation = glm::vec3(0.2f, 0.125f, 0.2f) / 2.0f;
+	particle.colourBegin = glm::vec4(0.9f, 0.1f, 0.1f, 1.0f);
+	particle.colourEnd = glm::vec4(0.5f, 0.0f, 0.0f, 0.0f);
+	particle.sizeBegin = 8.0f;
+	particle.sizeEnd = 4.0f;
+	particle.sizeVariation = 2.0f;
+	particle.lifeTimeMs = 4000.0f;
+	for (int i = 0; i < 20; i++)
+		particleSystem->Emit(particle);
+	particle.velocity = broVelocity / (10.0f * broSpeed);
+	particle.velocityVariation = glm::vec3(0.25f, 0.1f, 0.2f);
+	for (int i = 0; i < 80; i++)
+		particleSystem->Emit(particle);
+}
+
+void WorldSystem::tile_spike_collision_listener(ECS_ENTT::Entity slingBroEntity, ECS_ENTT::Entity tileSpikeEntity)
+{
+	Motion& slingBroMotion = slingBroEntity.GetComponent<Motion>();
+	Motion& tileSpikeMotion = tileSpikeEntity.GetComponent<Motion>();
+
+	auto& collidingBrosTurn = slingBroEntity.GetComponent<Turn>();
+	collidingBrosTurn.subPoints(POINTS_LOST_UPON_SPIKE_COLLISION);
+
+	// Knock the player away from the spike tile and emit a "blood spray" particle effect 
+	glm::vec2 dispVecNorm = glm::vec2(glm::normalize(tileSpikeMotion.position - slingBroMotion.position));
+	slingBroMotion.position += 2.0f * glm::vec3(dispVecNorm.x, dispVecNorm.y, 0.0f);
+	auto& broVelocity = slingBroMotion.velocity;
+	float broSpeed = glm::length(broVelocity);
+	broVelocity = broSpeed * -glm::vec3(dispVecNorm.x, dispVecNorm.y, 0.0f);
+	broVelocity.x += (0.5f - Random::Float()) * MAX_VELOCITY / 2.0f;
+	if (broSpeed > MAX_VELOCITY)
+		broVelocity = (broVelocity / broSpeed) * MAX_VELOCITY;
+
+	// Check orientation of character from the spike tile and set knockback direction, particle velocity correctly
+	float angle = atan(dispVecNorm.y, dispVecNorm.x); // angle in radians from spike tile to slingbro
+	glm::vec3 particleVelocity = glm::vec3(1.0f);
+	float particleSpeed = 0.1f;
+	if (angle > -PI / 4 && angle <= PI / 4) // bro to the right of spike tile
+		particleVelocity = glm::vec3(-particleSpeed, 0.0f, 0.0f);
+	else if (angle > PI / 4 && angle <= 3 * PI / 4)	// bro below spike tile
+		particleVelocity = glm::vec3(0.0f, -particleSpeed, 0.0f);
+	else if (angle > 3 * PI / 4 && angle <= 5 * PI / 4)	// bro to the left of spike tile
+		particleVelocity = glm::vec3(particleSpeed, 0.0f, 0.0f);
+	else // bro above spike tile
+		particleVelocity = glm::vec3(0.0f, particleSpeed, 0.0f);
+
+	// Deform the character
+	if (!slingBroEntity.HasComponent<Deformation>())
+		slingBroEntity.AddComponent<Deformation>(0.8f, 1.2f, angle, 100.0f);
+	Mix_PlayChannel(-1, ugh_sound, 0);
+
+	// Emit blood spray particles
+	ParticleSystem* particleSystem = ParticleSystem::GetInstance();
+	ParticleProperties particle;
+	glm::vec2 particleOffset = glm::vec2(dispVecNorm.x * (slingBroMotion.scale.x / 1.4f), dispVecNorm.y * (slingBroMotion.scale.y / 1.4f));
+	particle.position = slingBroMotion.position + glm::vec3(particleOffset.x, particleOffset.y, 0.0f);
+	particle.velocity = particleVelocity;
+	particle.velocityVariation = glm::vec3(0.2f, 0.125f, 0.2f) / 2.0f;
+	particle.colourBegin = glm::vec4(0.9f, 0.1f, 0.1f, 1.0f);
+	particle.colourEnd = glm::vec4(0.5f, 0.0f, 0.0f, 0.0f);
+	particle.sizeBegin = 8.0f;
+	particle.sizeEnd = 4.0f;
+	particle.sizeVariation = 2.0f;
+	particle.lifeTimeMs = 4000.0f;
+	for (int i = 0; i < 20; i++)
+		particleSystem->Emit(particle);
+	particle.velocity = broVelocity / (10.0f * broSpeed);
+	particle.velocityVariation = glm::vec3(0.25f, 0.1f, 0.2f);
+	for (int i = 0; i < 80; i++)
+		particleSystem->Emit(particle);
+}
+
+void WorldSystem::projectile_collision_listener(ECS_ENTT::Entity slingBroEntity, ECS_ENTT::Entity projectileEntity)
+{
+	Motion& slingBroMotion = slingBroEntity.GetComponent<Motion>();
+	Motion& projectileMotion = projectileEntity.GetComponent<Motion>();
+
+	auto& collidingBrosTurn = slingBroEntity.GetComponent<Turn>();
+	collidingBrosTurn.subPoints(POINTS_LOST_BASIC_PROJECTILE);
+	ActiveScene->m_Registry.destroy(projectileEntity);
+
+	// Knock the player away from the projectile
+	glm::vec2 dispVecNorm = glm::vec2(glm::normalize(projectileMotion.position - slingBroMotion.position));
+	slingBroMotion.position -= 2.0f * glm::vec3(dispVecNorm.x, dispVecNorm.y, 0.0f);
+	auto& broVelocity = slingBroMotion.velocity;
+	auto& projectileVelocity = projectileMotion.velocity;
+	float broSpeed = glm::length(broVelocity);
+	float projectileSpeed = glm::length(projectileVelocity);
+	broVelocity = (broSpeed + projectileSpeed) * -2.0f * glm::vec3(dispVecNorm.x, dispVecNorm.y, 0.0f);
+
+	if (broSpeed > MAX_PROJECTILE_KNOCKBACK_VELOCITY)
+		broVelocity = (broVelocity / broSpeed) * MAX_PROJECTILE_KNOCKBACK_VELOCITY;
+
+	// Deform the character
+	float angle = atan(dispVecNorm.y, dispVecNorm.x);
+	if (!slingBroEntity.HasComponent<Deformation>())
+		slingBroEntity.AddComponent<Deformation>(0.8f, 1.2f, angle, 100.0f);
+	Mix_PlayChannel(-1, ugh_sound, 0);
+}
+
+void WorldSystem::helge_projectile_collision_listener(ECS_ENTT::Entity slingBroEntity, ECS_ENTT::Entity helgeProjectileEntity)
+{
+	Motion& slingBroMotion = slingBroEntity.GetComponent<Motion>();
+	Motion& helgeProjectileMotion = helgeProjectileEntity.GetComponent<Motion>();
+
+	auto& turn = slingBroEntity.GetComponent<Turn>();
+	turn.subPoints(POINTS_LOST_HELGE_PROJECTILE);
+	ActiveScene->m_Registry.destroy(helgeProjectileEntity);
+
+	// Knock the player away from Helge's projectile 
+	glm::vec2 dispVecNorm = glm::vec2(glm::normalize(helgeProjectileMotion.position - slingBroMotion.position));
+	slingBroMotion.position -= 2.0f * glm::vec3(dispVecNorm.x, dispVecNorm.y, 0.0f);
+	auto& broVelocity = slingBroMotion.velocity;
+	auto& projectileVelocity = helgeProjectileMotion.velocity;
+	float broSpeed = glm::length(broVelocity);
+	float projectileSpeed = glm::length(projectileVelocity);
+	broVelocity = (broSpeed + projectileSpeed) * -2.0f * glm::vec3(dispVecNorm.x, dispVecNorm.y, 0.0f);
+
+	if (broSpeed > MAX_PROJECTILE_KNOCKBACK_VELOCITY)
+		broVelocity = (broVelocity / broSpeed) * MAX_PROJECTILE_KNOCKBACK_VELOCITY;
+
+	// Deform the character
+	float angle = atan(dispVecNorm.y, dispVecNorm.x);
+	if (!slingBroEntity.HasComponent<Deformation>())
+		slingBroEntity.AddComponent<Deformation>(0.6f, 1.4f, angle, 100.0f);
+	Mix_PlayChannel(-1, ugh_sound, 0);
 }
 
 // Collisions between wall and non-wall entities - callback function, listening to PhysicsSystem::Collisions
 // example of observer pattern
 void WorldSystem::collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, bool hit_wall)
 {
+	if (!is_game_scene()) return;
+
 	if (entity_i.HasComponent<SlingBro>() && DebugSystem::in_debug_mode) {
 		DebugSystem::in_freeze_mode = true;
 	}
@@ -456,10 +825,24 @@ void WorldSystem::collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity
 	auto current_player = get_current_player();
 
 	if (!hit_wall && entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<Projectile>()) {
-		auto& turn = entity_i.GetComponent<Turn>();
-		--turn.points;
-		ActiveScene->m_Registry.destroy(entity_j);
-	} else if (entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<PowerUp>()) {
+		projectile_collision_listener(entity_i, entity_j);
+	}
+	else if (entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<HelgeProjectile>()) {
+		helge_projectile_collision_listener(entity_i, entity_j);
+	}
+	else if (entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<HazardSpike>()) {
+		ground_spike_collision_listener(entity_i, entity_j);
+	}
+	else if (entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<HazardTileSpike>()) {
+		tile_spike_collision_listener(entity_i, entity_j);
+	}
+	else if (entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<CollidableEnemy>()) {
+		collidable_enemy_collision_listener(entity_i, entity_j);
+	}
+	else if (entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<SlingBro>()) {
+		Mix_PlayChannel(-1, ugh_sound, 0);
+	}
+	else if (entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<PowerUp>()) {
 		powerup_collision_listener(entity_i, entity_j, ActiveScene);
 	}
 	else if (entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<GoalTile>())
@@ -470,34 +853,42 @@ void WorldSystem::collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity
 	}
 	else if (entity_i.HasComponent<SnailEnemy>() && entity_j.HasComponent<GoalTile>())
 	{
-		setIsLoadNextLevel(true);
-	}
-	else if (entity_j.HasComponent<PowerUp>())
-	{
-		Mix_PlayChannel(-1, power_up_sound, 0);
+		setIsLevelRestart(true);
 	}
 	else if (is_moving(current_player) && entity_i == current_player)
 	{
 		// slingBro sound effects for tiles
 		if (entity_i.HasComponent<SlingBro>())
 		{
-			if (entity_j.HasComponent<WindyGrass>())
-			{
-				Mix_PlayChannel(-1, short_grass_sound, 0);
-			}
-			else if (entity_j.HasComponent<GrassyTile>())
-			{
-				Mix_PlayChannel(-1, shorter_grass_sound, 0);
-			}
-			else if (entity_j.HasComponent<LavaTile>())
-			{
-				Mix_PlayChannel(-1, sizzle_sound, 0);
-
-			}
-			else if (hit_wall)
-			{
-				Mix_PlayChannel(-1, short_thud_sound, 0);
-
+			if (abs(entity_i.GetComponent<Motion>().velocity.y) > AUDIO_TRIGGER_VELOCITY_Y) {
+				if (entity_j.HasComponent<WindyGrass>())
+				{
+					Mix_PlayChannel(-1, short_grass_sound, 0);
+				}
+				else if (entity_j.HasComponent<GrassyTile>())
+				{
+					Mix_PlayChannel(-1, shorter_grass_sound, 0);
+				}
+				else if (entity_j.HasComponent<LavaTile>())
+				{
+					Mix_PlayChannel(-1, sizzle_sound, 0);
+				}
+				else if (entity_j.HasComponent<SandTile>())
+				{
+					Mix_PlayChannel(-1, sand_skidding_sound, 0);
+				}
+				else if (entity_j.HasComponent<GlassTile>())
+				{
+					Mix_PlayChannel(-1, tapping_glass_sound, 0);
+				}
+				else if (entity_j.HasComponent<BouncyTile>())
+				{
+				Mix_PlayChannel(-1, snow_steppin_sound, 0);
+				}
+				else if (hit_wall)
+				{
+					Mix_PlayChannel(-1, short_thud_sound, 0);
+				}
 			}
 		}
 	}
@@ -519,7 +910,7 @@ bool WorldSystem::IsKeyPressed(const int glfwKeycode)
 // On key callback
 // See: https://www.glfw.org/docs/3.3/input_guide.html
 void WorldSystem::on_key(int key, int, int action, int mod)
-{	
+{
 	if (is_menu_scene())
 	{
 		if (action == GLFW_RELEASE && key == GLFW_KEY_H)
@@ -527,66 +918,65 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			PrevScenes.push(ActiveScene);
 			ActiveScene = HelpScene;
 		}
-		
-		if (action == GLFW_RELEASE && key == GLFW_KEY_ESCAPE)
-		{
-			exit(0);
-		}
 	}
 	else if (is_help_scene())
 	{
-		// Flip between pages
-		if (action == GLFW_RELEASE && key == GLFW_KEY_H)
+		// Toggle help menu
+		if (action == GLFW_RELEASE && (key == GLFW_KEY_H || key == GLFW_KEY_ESCAPE))
 		{
-			// Get the current help page
-			auto view = WorldSystem::HelpScene->m_Registry.view<Help>();
-			ECS_ENTT::Entity help_screen = ECS_ENTT::Entity(view.back(), WorldSystem::HelpScene);
-			auto page = help_screen.GetComponent<Help>().page;
-
-			// Get the next page texture
-			unsigned int next_page = (page + 1) % HELP_TEXTURES.size();
-			auto texture = HELP_TEXTURES.at(next_page);
-			HelpScene->m_Registry.destroy(help_screen);
-
-			// Create the next page
-			auto next_help_screen = Screen::createScreen(texture, MENU_CAMERA_POSITION, HelpScene);
-			auto& next_help = next_help_screen.AddComponent<Help>();
-			next_help.page = next_page;
-		}
-
-		if (action == GLFW_RELEASE && key == GLFW_KEY_ESCAPE)
-		{
-			ECS_ENTT::Scene* tempScene = PrevScenes.top();
+			ECS_ENTT::Scene* prev = PrevScenes.top();
 			PrevScenes.pop();
 			PrevScenes.push(ActiveScene);
-			ActiveScene = tempScene;
+			ActiveScene = prev;
 		}
 	}
 	// A game scene is active
-	else if (ActiveScene == GameScene && ActiveScene->is_in_dialogue)
+	else if (is_game_scene() && ActiveScene->is_in_dialogue)
 	{
-		// Resetting game
 		if (action == GLFW_RELEASE) {
+			// Restart current level
 			if (key == GLFW_KEY_R)
 			{
 				restart();
 			}
+
+			// Restart from saved state
+			if (key == GLFW_KEY_L)
+			{
+				load_saved_level();
+			}
+
 			// Bring up help scene
 			else if (key == GLFW_KEY_H)
 			{
 				PrevScenes.push(ActiveScene);
 				ActiveScene = HelpScene;
 			}
+
+			// Return to main menu
 			else if (key == GLFW_KEY_ESCAPE)
 			{
 				PrevScenes.push(ActiveScene);
 				ActiveScene = MenuScene;
 			}
+
 			// Saving
 			else if (key == GLFW_KEY_ENTER)
 			{
 				LevelManager::save_level(GameScene);
 			}
+
+			// Hidden skip level key
+			else if (key == GLFW_KEY_0)
+			{
+				Mix_PlayChannel(-1, transport_sound, 0);
+				Mix_PlayChannel(-1, yeehaw_sound, 0);
+				setIsLoadNextLevel(true);
+				Camera* activeCamera = WorldSystem::GameScene->GetCamera();
+				activeCamera->SetFixed(false);
+			}
+
+			// Progress dialogue
 			else
 			{
 				handleDialogue();
@@ -601,6 +991,12 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			if (key == GLFW_KEY_R)
 			{
 				restart();
+			}
+
+			// Restart from saved state
+			if (key == GLFW_KEY_L)
+			{
+				load_saved_level();
 			}
 			
 			// Return to main menu
@@ -622,6 +1018,16 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 			{
 				LevelManager::save_level(GameScene);
 			}
+
+			// Hidden skip level key
+			else if (key == GLFW_KEY_0)
+			{
+				Mix_PlayChannel(-1, transport_sound, 0);
+				Mix_PlayChannel(-1, yeehaw_sound, 0);
+				setIsLoadNextLevel(true);
+				Camera* activeCamera = WorldSystem::GameScene->GetCamera();
+				activeCamera->SetFixed(false);
+			}
 		}
 
 		// Debugging
@@ -634,13 +1040,7 @@ void WorldSystem::on_key(int key, int, int action, int mod)
 
 void WorldSystem::on_mouse_move(vec2 mouse_pos)
 {
-	auto slingBro = get_current_player();
-	if (slingBro.GetComponent<SlingMotion>().isClicked)
-	{
-		Mix_PlayChannel(-1, balloon_tap_sound, 0);
-
-	}
-	if (is_menu_scene())
+	if (is_menu_scene() || is_help_scene() || is_finale_scene())
 	{
 		for (auto entity : WorldSystem::ActiveScene->m_Registry.view<ClickableText>())
 		{
@@ -658,24 +1058,32 @@ void WorldSystem::on_mouse_move(vec2 mouse_pos)
 		}
 	}
 
-	if (is_game_scene() && !is_ai_turn && !ActiveScene->is_in_dialogue)
+	if (is_game_scene())
 	{
-		auto slingbro = get_current_player();
+		auto slingBro = get_current_player();
 
-		if (!slingbro.HasComponent<DeathTimer>())
+		if (slingBro.GetComponent<SlingMotion>().isClicked && !slingBro.GetComponent<Turn>().slung)
 		{
-			auto& m_slingbro = slingbro.GetComponent<Motion>();
-			glm::vec2 dispVecFromBro = getDispVecFromSource(glm::vec2(mouse_pos), glm::vec3(m_slingbro.position));
-			float angle = atan2(dispVecFromBro.y, dispVecFromBro.x);
-			// Offset angle by pi/2 to correct rotation angle
-			m_slingbro.angle = angle + M_PI_2;
+			// Play sling back sfx
+			Mix_PlayChannel(-1, balloon_tap_sound, 0);
+			// refresh the projected path
+			draw_projected_path(slingBro, mouse_pos);
+		}
+
+		// Rotate the bro
+		if (!is_ai_turn && !ActiveScene->is_in_dialogue)
+		{
+			if (!slingBro.HasComponent<DeathTimer>())
+			{
+				auto& m_slingbro = slingBro.GetComponent<Motion>();
+				glm::vec2 dispVecFromBro = getDispVecFromSource(glm::vec2(mouse_pos), glm::vec3(m_slingbro.position));
+				float angle = atan2(dispVecFromBro.y, dispVecFromBro.x);
+				// Offset angle by pi/2 to correct rotation angle
+				m_slingbro.angle = angle + M_PI_2;
+			}
 		}
 	}
-	
-	// TODO:
-	/*
-	- find bounding box/calculate centre of character
-	 **/
+
 }
 
 void WorldSystem::on_mouse_click(int button, int action, int mods)
@@ -708,13 +1116,15 @@ void WorldSystem::on_mouse_click(int button, int action, int mods)
 			vec2 dragMagnitude = broSlingMotion.magnitude;
 			vec3& broVelocity = broMotion.velocity;
 
+			auto& turn = slingbro.GetComponent<Turn>();
+
 			// Start sling
 			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 			{
 				// Keep track of the mouse position of the click
 				clickPosition = mouse_pos;
 
-				if (abs(dispVecFromBro.x) < broMotion.scale.x && abs(dispVecFromBro.y) < broMotion.scale.y && canClick)
+				if (abs(dispVecFromBro.x) < broMotion.scale.x && abs(dispVecFromBro.y) < broMotion.scale.y && canClick && !turn.slung)
 				{
 					isBroClicked = !WorldSystem::is_ai_turn;
 				}
@@ -723,8 +1133,10 @@ void WorldSystem::on_mouse_click(int button, int action, int mods)
 			// End sling
 			else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && isBroClicked)
 			{
+				// Reset clicked
+				isBroClicked = false;
+
 				// Already had a turn
-				auto& turn = slingbro.GetComponent<Turn>();
 				if (turn.slung)
 				{
 					return;
@@ -736,7 +1148,8 @@ void WorldSystem::on_mouse_click(int button, int action, int mods)
 					return;
 				}
 
-				isBroClicked = false;
+				RemoveAllEntitiesWithComponent<ProjectedPath>();
+
 				dragDir = -dispVecFromBro;
 				dragMagnitude *= length(dragDir);
 				dragDir.x *= dragMagnitude.x;
@@ -744,8 +1157,8 @@ void WorldSystem::on_mouse_click(int button, int action, int mods)
 				broVelocity = vec3(dragDir, 0.0) / 1000.f;
 
 				// setting max speed for the bro, maybe load the velocities when we have the level loader
-				broVelocity.x = glm::clamp(broVelocity.x, -MAX_VELOCITY, MAX_VELOCITY);
-				broVelocity.y = glm::clamp(broVelocity.y, -MAX_VELOCITY, MAX_VELOCITY);
+				if (glm::length(broVelocity) > MAX_VELOCITY)
+					broVelocity = glm::normalize(broVelocity) * MAX_VELOCITY;
 
 				// Record that player has slung
 				turn.slung = true;
@@ -753,43 +1166,138 @@ void WorldSystem::on_mouse_click(int button, int action, int mods)
 		}
 	}
 
-	if (is_menu_scene())
+	if (is_menu_scene() || is_help_scene() || is_finale_scene())
 	{
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
 		{
+			// Find the button in the scene that the cursor is hovered over
 			for (auto entity : WorldSystem::ActiveScene->m_Registry.view<ClickableText>())
 			{
 				ClickableText& clickableText = ActiveScene->m_Registry.get<ClickableText>(entity);
 				if (clickableText.isHoveredOver && !clickableText.isClicked)
 				{
+					// Set to clicked
 					clickableText.isClicked = true;
-					Mix_PlayChannel(-1, poppin_click_sound, 0);
-					if (clickableText.functionName == BUTTON_NAME_START)
-					{
-						printf("Start game\n");
-						clickableText.isClicked = false;
-						ActiveScene = GameScene;
-						point_camera_at_current_player();
-					}
-					else if (clickableText.functionName == BUTTON_NAME_QUIT)
-					{
-						printf("Exit game\n");
-						clickableText.isClicked = false;
-						exit(0);
-					}
-					else if (clickableText.functionName == BUTTON_NAME_HELP)
-					{
-						printf("Open help menu\n");
-						clickableText.isClicked = false;
-						PrevScenes.push(ActiveScene);
-						ActiveScene = HelpScene;
-					}
+
+					// Do the button action
+					click_button(clickableText);
+
 					// Click only one button at a time
 					break;
 				}
 			}
 		}
 	}
+}
+
+void WorldSystem::click_button(ClickableText& button)
+{
+	// Reset clicked attribute
+	button.isClicked = false;
+
+	if (is_menu_scene())
+	{
+		// Start a new game from scratch and choose number of players
+		if (button.functionName == BUTTON_NAME_NEW)
+		{
+			// Set to player selection menu
+			MenuSystem::set_main_menu(WorldSystem::MenuScene, MainMenuType::PLAYER_SELECTION);
+		}
+		// Start a new 1-player game
+		else if (button.functionName == BUTTON_NAME_1P)
+		{
+			remove_all_entities();
+			// Unfreeze camera
+			Camera* activeCamera = WorldSystem::GameScene->GetCamera();
+			activeCamera->SetFixed(false);
+			// Load the first level and spawn 1 player
+			levels = LevelManager::get_levels(NUM_PLAYERS_1);
+			GameScene->SetPlayer(0);
+			load_level(levels_path(yaml_file(levels[0])), NUM_PLAYERS_1);
+		}
+		// Start a new 2-player game
+		else if (button.functionName == BUTTON_NAME_2P)
+		{
+			remove_all_entities();
+			// Unfreeze camera
+			Camera* activeCamera = WorldSystem::GameScene->GetCamera();
+			activeCamera->SetFixed(false);
+			// Load the first level and spawn 2 players
+			levels = LevelManager::get_levels(NUM_PLAYERS_2);
+			load_level(levels_path(yaml_file(levels[0])), NUM_PLAYERS_2);
+		}
+		// Back to start menu
+		else if (button.functionName == BUTTON_NAME_BACK)
+		{
+			// Set to start menu
+			MenuSystem::set_main_menu(WorldSystem::MenuScene, MainMenuType::START);
+		}
+		// Continue your saved game
+		else if (button.functionName == BUTTON_NAME_RESUME)
+		{
+			remove_all_entities();
+			if (load_saved_level())
+			{
+				ActiveScene = GameScene;
+				levels = LevelManager::get_levels(GameScene->GetNumPlayers());
+				point_camera_at_current_player();
+			}
+		}
+		// Ain't no saved game
+		else if (button.functionName == BUTTON_NAME_RESUME_DISABLED)
+		{
+			// Play unable to click SFX
+			Mix_PlayChannel(-1, disabled_click_sound, 0);
+			return;
+		}
+		// Quit the game and close the window
+		else if (button.functionName == BUTTON_NAME_QUIT)
+		{
+			printf("Exit game\n");
+			exit(0);
+		}
+		// Open the help menu
+		else if (button.functionName == BUTTON_NAME_HELP)
+		{
+			PrevScenes.push(ActiveScene);
+			ActiveScene = HelpScene;
+		}
+	}
+
+	else if (is_help_scene())
+	{
+		// Previous help page
+		if (button.functionName == BUTTON_NAME_PREV)
+		{
+			MenuSystem::set_help_menu(HelpScene, PageDirection::PREV);
+		}
+		// Next help page
+		else if (button.functionName == BUTTON_NAME_NEXT)
+		{
+			MenuSystem::set_help_menu(HelpScene, PageDirection::NEXT);
+		}
+	}
+
+	else if (is_finale_scene())
+	{
+		// Back to start menu
+		if (button.functionName == BUTTON_NAME_BACK)
+		{
+			// Set to start menu
+			MenuSystem::set_main_menu(WorldSystem::MenuScene, MainMenuType::START);
+			PrevScenes.push(ActiveScene);
+			ActiveScene = MenuScene;
+		}
+		// Quit game
+		else if (button.functionName == BUTTON_NAME_QUIT_SMALL)
+		{
+			printf("Exit game\n");
+			exit(0);
+		}
+	}
+
+	// Play click SFX
+	Mix_PlayChannel(-1, poppin_click_sound, 0);
 }
 
 void WorldSystem::HandleCameraMovement(Camera* camera, float deltaTime)
@@ -859,6 +1367,10 @@ bool WorldSystem::is_help_scene() {
 	return ActiveScene == HelpScene;
 }
 
+bool WorldSystem::is_finale_scene() {
+	return ActiveScene == FinaleScene;
+}
+
 bool WorldSystem::is_moving(ECS_ENTT::Entity entity) {
 	vec2 velocity = entity.GetComponent<Motion>().velocity;
 	return abs(velocity.x) > END_TURN_VELOCITY_X || abs(velocity.y) > END_TURN_VELOCITY_Y;
@@ -870,39 +1382,47 @@ void WorldSystem::spawn_players() {
 	auto e_tile = ECS_ENTT::Entity(id_tile, WorldSystem::GameScene);
 	auto m_tile = e_tile.GetComponent<Motion>();
 
+	// Amount of space between each player
+	float offset = SPRITE_SCALE / 2.f;
+
+	// First player should be on the rightmost, so the
+	// leftmost player must be the next player index
+	auto num_players = GameScene->GetNumPlayers();
+	auto first_player = GameScene->GetPlayer();
+	auto second_player = (first_player + 1) % num_players;
+
 	// Create the bros at the start tile
 	for (int i = 0; i < num_players; i++)
 	{
-		// Render players left to right, with first player in front
-		float offset = SPRITE_SCALE / num_players;
+		// Calculate index starting from leftmost player
+		auto curr_player = (second_player + i) % num_players;
+
+		// Render players left to right, back to front
 		float x = m_tile.position.x + offset * i;
 		float y = m_tile.position.y + offset;
 		float z = 4.f * (i + 1); // Z-fighting
-		const auto& create_slingBro = slingBroFunctions.at(i);
-		auto player = (*create_slingBro)(glm::vec3(x, y, z), WorldSystem::GameScene);
+		const auto& create_slingBro = slingBroFunctions.at(curr_player);
+		auto bro = (*create_slingBro)(glm::vec3(x, y, z), WorldSystem::GameScene);
 
-		// Set the turn order of the player
-		auto& turn = player.GetComponent<Turn>();
-		turn.order = i;
+		// Set the turn order of the player where
+		// order goes from right to left
+		auto& turn = bro.GetComponent<Turn>();
+		turn.order = curr_player;
 	}
 }
 
 void WorldSystem::point_camera_at_current_player() {
-	// Point camera at the bro only if the active scene is the GameScene
-	if (!is_game_scene())
-		return;
-
 	auto slingbro = get_current_player();
-	ActiveScene->PointCamera(slingbro.GetComponent<Motion>().position);
+	GameScene->PointCamera(slingbro.GetComponent<Motion>().position);
 }
 
 ECS_ENTT::Entity WorldSystem::get_current_player() {
 	// Game scene must have the expected number of players
-	assert(GameScene->m_Registry.view<SlingBro>().size() >= num_players);
+	auto slingbros_view = GameScene->m_Registry.view<SlingBro>();
+	assert(slingbros_view.size() == GameScene->GetNumPlayers());
 
 	// Find the player with the current player index
 	auto player_idx = GameScene->GetPlayer();
-	auto slingbros_view = GameScene->m_Registry.view<SlingBro>();
 	for (auto slingbro_id : slingbros_view)
 	{
 		auto player = ECS_ENTT::Entity(slingbro_id, WorldSystem::GameScene);
@@ -922,11 +1442,14 @@ bool WorldSystem::should_end_turn(float elapsed_ms) {
 	auto current_player = get_current_player();
 	auto& turn = current_player.GetComponent<Turn>();
 
+	// End the turn if the player has lost too many points this turn
+	if (turn.pointsLostThisTurn >= MAX_POINTS_LOST_PER_TURN)
+		return true;
+
 	// Don't end the player's turn if they have yet to sling
 	if (!turn.slung)
-	{
 		return false;
-	}
+	
 
 	// Check if velocity within threshold, i.e. close to halt
 	if (is_moving(current_player))
@@ -941,14 +1464,14 @@ bool WorldSystem::should_end_turn(float elapsed_ms) {
 	return turn.countdown <= 0.f;
 }
 
-void WorldSystem::save_turn_point_information(int* arr) {
+void WorldSystem::save_turn_point_information(std::vector<int>* arr) {
 	for (auto entityId : ActiveScene->m_Registry.view<Turn>()) {
 		auto turn = ActiveScene->m_Registry.get<Turn>(entityId);
-		arr[turn.order] = turn.points;
+		(*arr)[turn.order] = turn.points;
 	}
 }
 
-void WorldSystem::load_turn_point_information(int turnPoints[]) {
+void WorldSystem::load_turn_point_information(std::vector<int> turnPoints) {
 	for (auto entityId : ActiveScene->m_Registry.view<Turn>()) {
 		auto& turn = ActiveScene->m_Registry.get<Turn>(entityId);
 		turn.points = turnPoints[turn.order];
@@ -957,7 +1480,13 @@ void WorldSystem::load_turn_point_information(int turnPoints[]) {
 
 void WorldSystem::reward_current_player() {
 	auto& currentPlayerTurn = get_current_player().GetComponent<Turn>();
-	currentPlayerTurn.points += LEVEL_COMPLETION_REWARD;
+	currentPlayerTurn.addPoints(POINTS_GAINED_ON_WIN);
+}
+
+void WorldSystem::decrement_points_bee_swarm() {
+	auto activePlayerEntity = get_current_player();
+	auto& currentPlayersTurn = activePlayerEntity.GetComponent<Turn>();
+	currentPlayersTurn.subPoints(POINTS_LOST_PER_TURN_PER_BEE_SWARM * ParticleSystem::GetInstance()->NumBeesTargetingEntity(activePlayerEntity.GetEntityID()));
 }
 
 unsigned int WorldSystem::set_next_player() {
@@ -966,11 +1495,19 @@ unsigned int WorldSystem::set_next_player() {
 	auto& turn = current_player.GetComponent<Turn>();
 	turn.countdown = END_TURN_COUNTDOWN;
 	turn.slung = false;
+	turn.path_fade_ms = PROJECTED_PATH_FADE_COUNTDOWN;
 
 	// Increment player index to next player
-	auto next_player_idx = (ActiveScene->GetPlayer() + 1) % num_players;
-	WorldSystem::is_ai_turn = next_player_idx == 0;
-	ActiveScene->SetPlayer(next_player_idx);
+	auto next_player_idx = (GameScene->GetPlayer() + 1) % GameScene->GetNumPlayers();
+	WorldSystem::is_ai_turn = next_player_idx == 0 && !GameScene->m_Registry.view<AI>().empty();
+	GameScene->SetPlayer(next_player_idx);
+
+	// Get new player's turn and reset their pointsLostThisTurn to zero
+	auto& newPlayersTurn = get_current_player().GetComponent<Turn>();
+	newPlayersTurn.pointsLostThisTurn = 0;
+
+	// Take away points for every bee swarm targeting the current player
+	decrement_points_bee_swarm();
 	
 //	if (WorldSystem::is_ai_turn)
 //	{
@@ -982,57 +1519,96 @@ unsigned int WorldSystem::set_next_player() {
 	return next_player_idx;
 }
 
-void WorldSystem::load_level(const std::string& level_file_path, bool spawn_players)
+void WorldSystem::load_level(const std::string& level_file_path, size_t num_players_to_spawn)
 {
 	// Check if level exists
-	if (!file_exists(level_file_path))
-	{
-		printf("NO LEVEL NAMED '%s' FOUND! HAVE YOU CREATED THE LEVEL AND COPIED IT INTO THE levels/ DIRECTORY HUH????\n", level_file_path.c_str());
-		assert(false); // todo(atsang): gracefully handle
-	}
+	assert(Util::file_exists(level_file_path) && "HAVE YOU CREATED THE LEVEL AND COPIED IT INTO THE levels/ DIRECTORY HUH????\n");
+
+	// Grab old scene values and delete
+	auto next_player_idx = GameScene->GetPlayer();
+	Camera* oldCamera = new Camera(*WorldSystem::GameScene->GetCamera());
+	delete(WorldSystem::GameScene);
 
 	// Load the level
 	printf("Loading level from '%s'\n", level_file_path.c_str());
-	Camera* oldCamera = new Camera(*WorldSystem::GameScene->GetCamera());
-	delete(WorldSystem::GameScene);
 	WorldSystem::GameScene = LevelManager::load_level(level_file_path, oldCamera);
-	WorldSystem::ActiveScene = WorldSystem::GameScene;
-
-	background_music = Mix_LoadMUS(audio_path(WorldSystem::GameScene->m_BackgroundMusicFileName).c_str());
-	Mix_PlayMusic(background_music, -1);
+	GameScene->SetPlayer(next_player_idx);
 
 	// Spawn the players
-	if (spawn_players)
+	if (num_players_to_spawn > 0)
 	{
+		WorldSystem::GameScene->SetNumPlayer(num_players_to_spawn);
 		WorldSystem::spawn_players();
 	}
 
-	// Pan camera to next player
-	point_camera_at_current_player();
-}
 
-void WorldSystem::reload_level()
-{
-	// User has saved level progress, so load the saved level file
-	const std::string saved_file_path = saved_path(yaml_file(SAVE_FILE_NAME));
-	if (file_exists(saved_file_path))
+	for (auto entityID : GameScene->m_Registry.view<SlingBro>())
 	{
-		printf("Found saved data at '%s'\n", saved_file_path.c_str());
-		load_level(saved_file_path, false);
-		return;
+		auto player = ECS_ENTT::Entity(entityID, GameScene);
+
+		std::shared_ptr<TextFont> font = TextFont::load(RETRO_COMPUTER_TTF);
+
+		// sorry for hardcoding T_T but there's only 2 of em
+		if (player.HasComponent<OrangeBro>())
+		{
+			auto bro = SlingBro::createOrangeSlingBroProfile(glm::vec3(30, 20, 0), WorldSystem::GameScene);
+			Text& playerTextComponent = bro.GetComponent<Text>();
+			playerTextComponent.font = font;
+			playerTextComponent.scale = TEXT_SCALE;
+			playerTextComponent.position = vec2(TEXT_DISTANCE_X, TEXT_DISTANCE_Y);
+		}
+		else
+		{
+			auto bro = SlingBro::createPinkSlingBroProfile(glm::vec3(30, 20, 0), WorldSystem::GameScene);
+			Text& playerTextComponent = bro.GetComponent<Text>();
+			playerTextComponent.font = font;
+			playerTextComponent.scale = TEXT_SCALE;
+			playerTextComponent.position = vec2(TEXT_DISTANCE_X, TEXT_DISTANCE_Y * 2);
+		}
 	}
 
-	// Otherwise, reload the current level
-	load_level(levels_path(yaml_file(levels[get_level_number()])), true);
+
+	// Pan camera to next player
+	point_camera_at_current_player();
+
+	// Play music
+	background_music = Mix_LoadMUS(audio_path(WorldSystem::GameScene->m_BackgroundMusicFileName).c_str());
+	Mix_PlayMusic(background_music, -1);
+
+	// Switch to game scene
+	WorldSystem::ActiveScene = WorldSystem::GameScene;
+
+	// create title text
+	std::shared_ptr<TextFont> font = TextFont::load(RETRO_COMPUTER_TTF);
+	createText("texty", GameScene->m_Name, {30, 770}, font, 0.5f);
 }
 
-bool WorldSystem::file_exists(const std::string& file_path)
+ECS_ENTT::Entity WorldSystem::createText(std::string name, std::string content, vec2 position, std::shared_ptr<TextFont> font, float scale)
 {
-	// Try to open the file
-	std::ifstream fin(file_path);
+	ECS_ENTT::Entity texty = GameScene->CreateEntity(name);
+	Text& textComponent = texty.AddComponent<Text>();
+	textComponent.font = font;
+	textComponent.scale = scale;
+	textComponent.position = position;
+	textComponent.content = content;
+	texty.AddComponent<IgnoreSave>();
+	texty.AddComponent<IgnorePhysics>();
+	return texty;
+}
 
-	// To exist or not to exist
-	return !!fin;
+bool WorldSystem::load_saved_level()
+{
+	// Check if user has saved level progress
+	const std::string saved_file_path = saved_path(yaml_file(SAVE_FILE_NAME));
+	if (!Util::file_exists(saved_file_path))
+	{
+		return false;
+	}
+
+	// Load the saved level file
+	printf("Found saved data at '%s'\n", saved_file_path.c_str());
+	load_level(saved_file_path, 0);
+	return true;
 }
 
 glm::vec2 WorldSystem::getDispVecFromSource(glm::vec2 mouse_pos, glm::vec3 source_pos)
@@ -1051,9 +1627,62 @@ glm::vec2 WorldSystem::getDispVecFromSource(glm::vec2 mouse_pos, glm::vec3 sourc
 unsigned int WorldSystem::get_level_number()
 {
 	for (unsigned int i = 0; i < levels.size(); i++) {
-		if (levels[i] == ActiveScene->m_Name) {
+		if (levels[i] == ActiveScene->m_Id) {
 			return i;
 		}
 	}
 	return 0;
+}
+
+void WorldSystem::draw_projected_path(ECS_ENTT::Entity slingBro, vec2 mouse_pos){
+	RemoveAllEntitiesWithComponent<ProjectedPath>();
+	auto motion = slingBro.GetComponent<Motion>();
+	auto broPosition = vec3(motion.position.x, motion.position.y, motion.position.z);
+	auto broSlingMotion = slingBro.GetComponent<SlingMotion>();
+
+	glm::vec2 dispVecFromBro = WorldSystem::getDispVecFromSource(glm::vec2(mouse_pos), glm::vec3(broPosition));
+	vec2 dragDirLoop = -dispVecFromBro;
+	vec2 dragMagnitude = broSlingMotion.magnitude * length(dragDirLoop);
+	dragDirLoop.x *= dragMagnitude.x;
+	dragDirLoop.y *= dragMagnitude.y;
+	vec3 broVel = vec3(dragDirLoop, 0.0) / 1000.f;
+
+	if (glm::length(broVel) > MAX_VELOCITY)
+		broVel = glm::normalize(broVel) * MAX_VELOCITY;
+
+	float gravitational_constant = slingBro.GetComponent<Gravity>().gravitational_constant;
+
+	float pseudo_elapsed_ms = 50;
+	float scale = 15;
+	float maxY = motion.position.y + motion.scale.y / 2; // position of the ground below slingbro
+	for (int i = 0; i < 30; i++) // 30 stars as path
+	{
+		float step_seconds = (pseudo_elapsed_ms / 1000.0f);
+
+		broVel.y += gravitational_constant * step_seconds;
+		broVel.x -= broVel.x * step_seconds * HORIZONTAL_FRICTION_MAGNITUDE;
+		broPosition += broVel * step_seconds;
+		scale += 3; // path of increasing star sizes
+		if (broPosition.y < maxY) // only draw if the point is above slingbro position
+		{
+			ProjectedPath::createProjectedPoint(broPosition, scale, GameScene);
+		}
+		pseudo_elapsed_ms += 5; // space stars further apart as it moves further away from bro.
+	}
+
+	auto& turn = get_current_player().GetComponent<Turn>();
+	turn.mouse_pos = mouse_pos;
+}
+
+void WorldSystem::attach(std::function<void(ECS_ENTT::Scene* scene)> fn)
+{
+	callbacks.push_back(fn);
+}
+
+void WorldSystem::runWeatherCallbacks()
+{
+	for (std::function<void(ECS_ENTT::Scene* scene)> fn : callbacks) {
+		// run the callback functions
+		fn(ActiveScene);
+	}
 }

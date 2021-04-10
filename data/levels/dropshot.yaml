@@ -1,6 +1,8 @@
-name: dropshot
+id: dropshot
+name: Dropshot
 background: cloudy_parallax_background.png
-background_music: music.wav
+weather: sunny
+background_music: bgm_rock.wav
 player: 0
 map: |
    -- -- T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 T6 -- -- -- -- -- --
@@ -1268,6 +1270,8 @@ entities:
         - 100
         - 1
       can_move: true
+    ai:
+      countdown: 200
   - type: E2
     motion:
       angle: 0
@@ -1284,6 +1288,8 @@ entities:
         - 100
         - 1
       can_move: true
+    ai:
+      countdown: 200
   - type: E2
     motion:
       angle: 0
@@ -1300,6 +1306,8 @@ entities:
         - 100
         - 1
       can_move: true
+    ai:
+      countdown: 200
   - type: E2
     motion:
       angle: 0
@@ -1316,6 +1324,8 @@ entities:
         - 100
         - 1
       can_move: true
+    ai:
+      countdown: 200
   - type: T0
     motion:
       angle: 0

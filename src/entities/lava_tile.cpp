@@ -11,7 +11,7 @@ ECS_ENTT::Entity LavaTile::createLavaTile(vec3 position, ECS_ENTT::Scene* scene)
 	ECS_ENTT::Entity lavaTileEntity = scene->CreateEntity("Lava Tile");
 	lavaTileEntity.AddComponent<ShadedMeshRef>(meshResource);
 	ShadedMeshRef& resource = lavaTileEntity.GetComponent<ShadedMeshRef>();
-	resource.reference_to_cache->texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.reference_to_cache->texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = lavaTileEntity.AddComponent<Motion>();
 	motionComponent.position = position;

@@ -1,15 +1,19 @@
-name: Tutorial0
+name: The Origin
 background: cloudy_parallax_background.png
-background_music: happy_intro_music.wav
+background_music: bgm_happy.wav
+weather: sunny
 map: |
   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T1 --
   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-  -- T0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-  T5 T5 T5 E1 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5 T5
-  T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- H0 -- -- -- -- -- H0 -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- T0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- T1 --
+  T5 T5 T5 E1 T5 T5 T5 T5 -- -- T5 T5 T5 -- -- T5 T5 T5
+  T3 T3 T3 T3 T3 T3 T3 T3 H1 H1 T3 T3 T3 H1 H1 T3 T3 T3
   T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
   T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
 dialogue_boxes:

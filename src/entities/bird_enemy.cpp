@@ -17,7 +17,7 @@ ECS_ENTT::Entity BirdEnemy::createBirdEnemy(vec3 position, ECS_ENTT::Scene* scen
 
 	birdEnemyEntity.AddComponent<ShadedMeshRef>(resource);
 
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = birdEnemyEntity.AddComponent<Motion>();
 	motionComponent.position = position;
@@ -33,6 +33,7 @@ ECS_ENTT::Entity BirdEnemy::createBirdEnemy(vec3 position, ECS_ENTT::Scene* scen
 	aiComponent.behavior_tree = root;
 
 	birdEnemyEntity.AddComponent<BirdEnemy>();
+	birdEnemyEntity.AddComponent<CollidableEnemy>();
 
 	return birdEnemyEntity;
 }

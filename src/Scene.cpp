@@ -14,7 +14,8 @@ namespace ECS_ENTT {
 		m_BackgroundFilename(""),
 		m_Size(vec2(size.x * SPRITE_SCALE, size.y * SPRITE_SCALE)),
 		m_Camera(new Camera()),
-		m_Map(LevelMap(size.y,LevelRow(size.x)))
+		m_Map(LevelMap(size.y,LevelRow(size.x))),
+		m_Weather(WeatherTypes::Sunny)
 		{};
 
 	Scene::Scene(std::string name, glm::vec2 size, Camera* camera) :
@@ -22,7 +23,8 @@ namespace ECS_ENTT {
 		m_BackgroundFilename(""),
 		m_Size(vec2(size.x * SPRITE_SCALE, size.y * SPRITE_SCALE)),
 		m_Camera(camera),
-		m_Map(LevelMap(size.y,LevelRow(size.x)))
+		m_Map(LevelMap(size.y,LevelRow(size.x))),
+		m_Weather(WeatherTypes::Sunny)
 		{};
 
 	// Create an entity and associate it to this Scene
@@ -52,6 +54,16 @@ namespace ECS_ENTT {
 	void Scene::SetPlayer(const unsigned int index)
 	{
 		m_Player = index;
+	}
+
+	size_t Scene::GetNumPlayers()
+	{
+		return m_NumPlayers;
+	}
+
+	void Scene::SetNumPlayer(size_t n)
+	{
+		m_NumPlayers = n;
 	}
 
 	void Scene::PointCamera(vec3 position) {

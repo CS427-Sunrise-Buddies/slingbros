@@ -11,7 +11,7 @@ ECS_ENTT::Entity GlassTile::createGlassTile(vec3 position, ECS_ENTT::Scene* scen
 	ECS_ENTT::Entity glassTileEntity = scene->CreateEntity("Glass Tile");
 	glassTileEntity.AddComponent<ShadedMeshRef>(meshResource);
 	ShadedMeshRef& resource = glassTileEntity.GetComponent<ShadedMeshRef>();
-	resource.reference_to_cache->texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.reference_to_cache->texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = glassTileEntity.AddComponent<Motion>();
 	motionComponent.position = position;

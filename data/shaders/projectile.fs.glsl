@@ -7,7 +7,7 @@ in vec3 worldPosition;
 
 // Application data
 uniform float time;
-uniform vec3 fcolor;
+uniform vec4 fcolor;
 
 // Output color
 layout(location = 0) out vec4 color;

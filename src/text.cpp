@@ -16,7 +16,6 @@
 /**
  * Helper function for checking FreeType errors
  */
-// Credits to the 427 TAs
 void FT_Check(FT_Error e) {
     if (e == 0) {
         // Not a problem
@@ -154,8 +153,8 @@ void FT_Check(FT_Error e) {
             case 0xB6: return "`ENCODING' field missing";
             case 0xB7: return "`BBX' field missing";
             case 0xB8: return "`BBX' too big";
-            case 0xB9: return "Font header corrupted or missing fields";
-            case 0xBA: return "Font glyphs corrupted or missing fields";
+            case 0xB9: return "TextFont header corrupted or missing fields";
+            case 0xBA: return "TextFont glyphs corrupted or missing fields";
         }
     }();
 
@@ -225,7 +224,7 @@ public:
     // NOTE: shared_ptr is used (instead of ordinary reference) so that
     // any fonts destroyed after main() exists still point to a valid
     // font library. Otherwise, the static font library might be destroyed
-    // before other static objects that still need it (such as Font objects
+    // before other static objects that still need it (such as TextFont objects
     // being used by Text objects in ECS::registry<Text>)
     // See Static Initialization Order Fiasco for details:
     // https://en.cppreference.com/w/cpp/language/siof
@@ -260,7 +259,7 @@ private:
 
 
 
-Text::Text(std::string content, std::shared_ptr<Font> font, glm::vec2 position, float scale, glm::vec3 colour) noexcept
+Text::Text(std::string content, std::shared_ptr<TextFont> font, glm::vec2 position, float scale, glm::vec3 colour) noexcept
     : content(std::move(content))
     , font(std::move(font))
     , position(position)
@@ -271,14 +270,23 @@ Text::Text(std::string content, std::shared_ptr<Font> font, glm::vec2 position, 
 
 Text::Text(std::string content, const std::string& pathToTTF, glm::vec2 position, float scale, glm::vec3 colour) noexcept
     : content(std::move(content))
-    , font(Font::load(pathToTTF))
+    , font(TextFont::load(pathToTTF))
     , position(position)
     , scale(scale)
     , colour(colour) {
 
 }
 
-Font::Font(const std::string& pathToTTF)
+Text::Text() noexcept
+		: content("")
+		, font(nullptr)
+		, position({0,0})
+		, scale(1.0f)
+		, colour({0.f, 0.f, 0.f}) {
+
+}
+
+TextFont::TextFont(const std::string& pathToTTF)
     : m_face{}
     , m_context(FreeTypeContext::get()) {
     
@@ -301,18 +309,18 @@ Font::Font(const std::string& pathToTTF)
 	}
 }
 
-Font::~Font() noexcept {
+TextFont::~TextFont() noexcept {
     // Clean up the font face
     FT_Check(FT_Done_Face(m_face));
 }
 
-std::shared_ptr<Font> Font::load(const std::string& pathToTTF) {
+std::shared_ptr<TextFont> TextFont::load(const std::string& pathToTTF) {
     // Static cache for fonts that have already been loaded.
     // fonts are used elsewhere using shared_ptr, but are stored
     // in the cache using weak_ptr. This allows fonts to be destroyed
     // when they are no longer used elsewhere, in which case the
     // weak_ptr will no longer be convertible to a valid shared_ptr.
-    static std::map<std::string, std::weak_ptr<Font>> s_fontCache;
+    static std::map<std::string, std::weak_ptr<TextFont>> s_fontCache;
 
     // Look for a matching font in the cache
     auto it = s_fontCache.find(pathToTTF);
@@ -324,7 +332,7 @@ std::shared_ptr<Font> Font::load(const std::string& pathToTTF) {
         }
     }
     // otherwise, if there is no match, construct a new shared_ptr for the font
-    auto sp = std::make_shared<Font>(pathToTTF);
+    auto sp = std::make_shared<TextFont>(pathToTTF);
 
     // cache the new font
     s_fontCache[pathToTTF] = sp;
@@ -332,7 +340,7 @@ std::shared_ptr<Font> Font::load(const std::string& pathToTTF) {
     return sp;
 }
 
-const Font::Character& Font::getCharacter(std::uint32_t codePoint) {
+const TextFont::Character& TextFont::getCharacter(std::uint32_t codePoint) {
     // Search for the code point in the cached character map
     auto it = m_characters.find(codePoint);
     if (it != end(m_characters)) {

@@ -76,8 +76,8 @@ struct Texture
 {
 	GLResource<TEXTURE> texture_id;
 	ivec2 size = {0, 0};
-	vec3 color = {1,1,1};
-	
+	glm::vec4 color = { 1.0f, 1.0f, 1.0f, 1.0f};
+
 	// Loads texture from file specified by path
 	void load_from_file(std::string path);
 	bool is_valid() const; // True if texture is valid

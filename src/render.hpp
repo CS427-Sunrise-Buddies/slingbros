@@ -31,8 +31,11 @@ public:
 
 	// Expose the creating of visual representations to other systems
 	static void createSprite(ShadedMesh& mesh_container, std::string texture_path, std::string shader_name, glm::vec2 spritesheetOffset = vec2(-1.0f, -1.0f));
+	static void createProfileSprite(ShadedMesh& mesh_container, std::string texture_path, std::string shader_name, TexturedVertex (&vertices)[4]);
+	static void createDialogueSprite(ShadedMesh& mesh_container, std::string texture_path, std::string shader_name);
 	static void createBackgroundSprite(ShadedMesh& mesh_container, std::string texture_path, std::string shader_name);
 	static void createParticle(ShadedMesh& particleMesh, std::string shader_name);
+	static void createBeeMesh(ShadedMesh& beeMesh, std::string shader_name);
 	static void createColoredMesh(ShadedMesh& mesh_container, std::string shader_name);
 
 private:
@@ -44,6 +47,7 @@ private:
 	void drawTexturedMesh(ECS_ENTT::Entity entity, const mat4& view, const mat4& projection);
 	void drawParticle(Particle particle, ShadedMesh* particleMesh, const mat4& view, const mat4& projection);
 	void drawParticlesInstanced(ParticleSystem* particleSystem, const mat4& view, const mat4& projection);
+	void drawBee(Bee bee, ShadedMesh* beeMesh, const mat4& view, const mat4& projection);
 	void drawToScreen();
 
 	// Window handle

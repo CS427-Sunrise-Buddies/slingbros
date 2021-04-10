@@ -11,7 +11,7 @@ ECS_ENTT::Entity GrassyTile::createGrassyTile(vec3 position, ECS_ENTT::Scene* sc
 	ECS_ENTT::Entity grassyTileEntity = scene->CreateEntity("Grassy Tile");
 	grassyTileEntity.AddComponent<ShadedMeshRef>(meshResource);
 	ShadedMeshRef& resource = grassyTileEntity.GetComponent<ShadedMeshRef>();
-	resource.reference_to_cache->texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.reference_to_cache->texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = grassyTileEntity.AddComponent<Motion>();
 	motionComponent.position = position;

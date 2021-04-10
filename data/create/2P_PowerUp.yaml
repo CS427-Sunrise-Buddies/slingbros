@@ -1,0 +1,24 @@
+name: Power Me Up!
+background: cloudy_parallax_background.png
+background_music: bgm_relax.wav
+weather: sunny
+map: |
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- H0 -- H0 -- H0 -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T5
+  -- -- -- P1 -- -- -- -- P2 -- -- -- -- P0 -- -- T1 T3
+  -- -- -- -- -- -- P3 -- -- -- P3 -- -- -- -- -- -- T2
+  -- T0 -- -- P4 -- -- -- -- -- -- -- P4 -- -- -- -- T2
+  T5 T5 T5 E1 T5 T5 T5 -- -- -- T5 T5 T5 T5 T5 T5 T5 T2
+  T3 T3 T3 T3 T3 T3 T3 -- -- -- T3 T3 T3 T3 T3 T3 T3 T2
+  T2 T2 T2 T2 T2 T2 T2 H1 H1 H1 T2 T2 T2 T2 T2 T2 T2 T2
+  T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+dialogue_boxes:
+   - 2P_PowerUps/2P_powerups_dialogue_0.png
+   - 2P_PowerUps/2P_powerups_dialogue_1.png
+   - 2P_PowerUps/2P_powerups_dialogue_2.png
+   - 2P_PowerUps/2P_powerups_dialogue_3.png

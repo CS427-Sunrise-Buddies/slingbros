@@ -1,0 +1,23 @@
+name: Symmetry
+background: cloudy_parallax_background.png
+background_music: bgm_simple.wav
+weather: sunny
+map: |
+  T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4
+  T4 P3 P3 -- -- -- -- -- -- -- -- -- -- -- P3 P3 T4
+  T4 P3 P3 -- -- -- -- -- -- -- -- -- -- -- P3 P3 T4
+  T4 T5 T5 T5 P3 P3 T5 -- -- -- T5 P3 P3 T5 T5 T5 T4
+  T4 T3 T3 T3 P3 P3 T3 -- T0 -- T3 P3 P3 T3 T3 T3 T4
+  T4 T2 P1 T2 -- -- T2 -- -- -- T2 -- -- T2 P1 T2 T4
+  T4 T2 T3 T2 -- -- T2 T3 T3 T3 T2 -- -- T2 T3 T2 T4
+  T4 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T4
+  T4 -- -- -- -- -- -- -- P3 -- -- -- -- -- -- -- T4
+  T4 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T4
+  T4 -- -- -- -- -- T3 T3 T3 T3 T3 -- -- -- -- -- T4
+  T4 -- T3 -- E0 -- T2 -- -- -- T2 -- E0 -- T3 -- T4
+  T4 -- -- -- -- -- T2 -- T1 -- T2 -- -- -- -- -- T4
+  T4 -- -- -- T4 -- T2 -- -- -- T2 -- T4 -- -- -- T4
+  T4 -- -- -- -- -- T2 T3 -- T3 T2 -- -- -- -- -- T4
+  T4 -- E5 -- -- -- -- T5 T5 T5 -- -- -- -- E5 -- T4
+  T4 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T3 T4
+  T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4

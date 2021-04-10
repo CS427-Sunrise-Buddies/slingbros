@@ -1,6 +1,7 @@
-name: HighUp
+name: High Up
 background: cloudy_parallax_background.png
-background_music: intensity.wav
+background_music: bgm_intensity.wav
+weather: sunny
 map: |
   T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7 T7
   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --

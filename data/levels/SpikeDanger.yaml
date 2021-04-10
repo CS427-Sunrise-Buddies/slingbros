@@ -1,0 +1,1707 @@
+id: SpikeDanger
+name: Spike, Spike, Danger, Danger!
+background: cloudy_parallax_background.png
+weather: sunny
+background_music: bgm_mystery.wav
+player: 0
+map: |
+   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- P3 P3 -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- H0 -- -- -- P3 P3 -- -- -- --
+   -- -- -- -- -- -- -- -- -- -- -- -- T7 T1 -- -- P3 P3 -- -- -- H0
+   -- -- -- -- -- -- -- -- -- -- -- -- T7 -- -- -- P3 P3 -- -- -- T7
+   -- -- -- -- H0 -- -- -- -- -- -- -- T7 T7 T7 T7 T7 T7 -- P0 -- T7
+   -- T0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T7
+   -- -- -- -- -- -- -- -- -- P3 P0 P3 -- -- -- -- -- -- -- -- -- T7
+   T5 T5 T5 T5 T5 -- -- -- -- P3 P3 P3 -- -- T5 T5 T5 T5 -- -- -- T7
+   T6 T6 T6 T6 T6 T6 T6 T7 T7 -- -- -- T7 T7 T6 T6 T6 T6 H1 H1 H1 T7
+   T6 T6 T6 T6 T6 T6 T6 T7 T7 H1 H1 H1 T7 T7 T6 T6 T6 T6 T6 T6 T6 T7
+   T6 T6 T6 T6 T6 T6 T6 T7 T7 T7 T7 T7 T7 T7 T6 T6 T6 T6 T6 T6 T6 T7
+entities:
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 2100
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 2000
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1900
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1800
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1700
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1600
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1500
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1400
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1300
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1200
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1100
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1000
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 900
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 800
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 700
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 600
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 500
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 400
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 300
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 200
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 100
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 0
+        - 1800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 2100
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 2000
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1900
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1800
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1700
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1600
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1500
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1400
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1300
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1200
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: H1
+    motion:
+      angle: 0
+      position:
+        - 1100
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: H1
+    motion:
+      angle: 0
+      position:
+        - 1000
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: H1
+    motion:
+      angle: 0
+      position:
+        - 900
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 800
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 700
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 600
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 500
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 400
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 300
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 200
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 100
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 0
+        - 1700
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 2100
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: H1
+    motion:
+      angle: 0
+      position:
+        - 2000
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: H1
+    motion:
+      angle: 0
+      position:
+        - 1900
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: H1
+    motion:
+      angle: 0
+      position:
+        - 1800
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1700
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1600
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1500
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 1400
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1300
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1200
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 800
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 700
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 600
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 500
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 400
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 300
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 200
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 100
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T6
+    motion:
+      angle: 0
+      position:
+        - 0
+        - 1600
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 2100
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T5
+    motion:
+      angle: 0
+      position:
+        - 1700
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T5
+    motion:
+      angle: 0
+      position:
+        - 1600
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T5
+    motion:
+      angle: 0
+      position:
+        - 1500
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T5
+    motion:
+      angle: 0
+      position:
+        - 1400
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1100
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1000
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 900
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: T5
+    motion:
+      angle: 0
+      position:
+        - 400
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T5
+    motion:
+      angle: 0
+      position:
+        - 300
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T5
+    motion:
+      angle: 0
+      position:
+        - 200
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T5
+    motion:
+      angle: 0
+      position:
+        - 100
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T5
+    motion:
+      angle: 0
+      position:
+        - 0
+        - 1500
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 2100
+        - 1400
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1100
+        - 1400
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P0
+    motion:
+      angle: 0
+      position:
+        - 1000
+        - 1400
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 900
+        - 1400
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 2100
+        - 1300
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T0
+    motion:
+      angle: 0
+      position:
+        - 100
+        - 1300
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 2100
+        - 1200
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: P0
+    motion:
+      angle: 0
+      position:
+        - 1900
+        - 1200
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1700
+        - 1200
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1600
+        - 1200
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1500
+        - 1200
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1400
+        - 1200
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1300
+        - 1200
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1200
+        - 1200
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: H0
+    motion:
+      angle: 0
+      position:
+        - 400
+        - 1200
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 2100
+        - 1100
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1700
+        - 1100
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1600
+        - 1100
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1200
+        - 1100
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: H0
+    motion:
+      angle: 0
+      position:
+        - 2100
+        - 1000
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1700
+        - 1000
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1600
+        - 1000
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: T1
+    motion:
+      angle: 0
+      position:
+        - 1300
+        - 1000
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: T7
+    motion:
+      angle: 0
+      position:
+        - 1200
+        - 1000
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1700
+        - 900
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1600
+        - 900
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: H0
+    motion:
+      angle: 0
+      position:
+        - 1200
+        - 900
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 100
+        - 100
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1700
+        - 800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true
+  - type: P3
+    motion:
+      angle: 0
+      position:
+        - 1600
+        - 800
+        - 0
+      velocity:
+        - 0
+        - 0
+        - 0
+      scale:
+        - 80
+        - 80
+        - 1
+      can_move: true

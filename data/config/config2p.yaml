@@ -1,0 +1,17 @@
+# 2-Player
+# List the levels to load in order
+levels:
+  - 2P_Intro
+  - 2P_Eugene
+  - 2P_PowerUp
+  - 2P_Enemies
+  - 2P_Bees
+  - SpikeDanger
+  - 2P_BigMoney
+  - BirdIceLevel
+  - 2P_StairLevel
+  - spiral
+  - 2P_Symmetry
+  - 2P_BigDrops
+  - danceforme
+  - 2P_FinalLevel

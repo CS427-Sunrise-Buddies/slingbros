@@ -1,6 +1,7 @@
-name: symmetry
+name: Symmetry
 background: cloudy_parallax_background.png
-background_music: music.wav
+background_music: bgm_simple.wav
+weather: sunny
 map: |
   T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4 T4
   T4 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T4

@@ -19,12 +19,12 @@ ECS_ENTT::Entity BasicEnemy::createBasicEnemy(vec3 position, ECS_ENTT::Scene* sc
 
 	basicEnemyEntity.AddComponent<ShadedMeshRef>(resource);
 
-	resource.texture.color = glm::vec3{1.0f, 1.0f, 1.0f};
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = basicEnemyEntity.AddComponent<Motion>();
 	motionComponent.position = position;
 	motionComponent.angle = 0.0f;
-	motionComponent.velocity = {50.0f, 0.0f, 0.0f};
+	motionComponent.velocity = {AI_SPEED, 0.0f, 0.0f};
 	motionComponent.scale = {resource.mesh.original_size.x * SPRITE_SCALE, resource.mesh.original_size.y * SPRITE_SCALE, 1.0f};
 	motionComponent.can_move = false;
 
@@ -36,6 +36,7 @@ ECS_ENTT::Entity BasicEnemy::createBasicEnemy(vec3 position, ECS_ENTT::Scene* sc
 	aiComponent.behavior_tree = root;
 
 	basicEnemyEntity.AddComponent<BasicEnemy>();
+	basicEnemyEntity.AddComponent<CollidableEnemy>();
 
 	// Set up the animation component
 	basicEnemyEntity.AddComponent<Animation>(key, glm::vec2(0, 0), 7, 200.0f, true);

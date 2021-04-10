@@ -5,41 +5,25 @@
 #include "entities/grassy_tile.hpp"
 #include "entities/slingbro.hpp"
 #include "entities/speed_powerup.hpp"
+#include "entities/beehive_enemy.hpp"
 #include "render.hpp"
+#include "world.hpp"
 
 #include <glm/gtc/constants.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/compatibility.hpp>
 
-#include <random>
-
 // Particle system structure based on example done by youtuber The Cherno in https://www.youtube.com/watch?v=GK0jHlv3e3w
-
-class Random
-{
-public:
-	static void Init()
-	{
-		s_RandomEngine.seed(std::random_device()());
-	}
-
-	static float Float()
-	{
-		return (float) s_Distribution(s_RandomEngine) / 100.f;
-	}
-
-private:
-	static std::mt19937 s_RandomEngine;
-	static std::uniform_int_distribution<std::mt19937::result_type> s_Distribution;
-};
 
 std::mt19937 Random::s_RandomEngine;
 std::uniform_int_distribution<std::mt19937::result_type> Random::s_Distribution(1, 100);
 
 ParticleSystem* ParticleSystem::instance = nullptr;
 
+const float WIND_MAGNITUDE = 0.005;
+
 ParticleSystem::ParticleSystem(uint32_t maxNumParticles)
-	: m_PoolIndex(maxNumParticles - 1), m_ParticleMesh(nullptr), m_ParticleMeshInstanced(nullptr)
+	: m_PoolIndex(maxNumParticles - 1), m_ParticleMesh(nullptr), m_ParticleMeshInstanced(nullptr), m_BeeSwarms(std::vector<BeeSwarm*>())
 {
 	Random::Init();
 	m_ParticlePool.resize(maxNumParticles);
@@ -57,10 +41,18 @@ ParticleSystem::ParticleSystem(uint32_t maxNumParticles)
 	if (particleMeshInstanced->effect.program.resource == 0) {
 		RenderSystem::createParticle(*particleMeshInstanced, "particle_shader_instanced");
 	}
+
+	std::string keyBeeMesh = "particleSystemBeeMesh";
+	ShadedMesh* beeMesh = &cache_resource(keyBeeMesh);
+
+	if (beeMesh->effect.program.resource == 0) {
+		RenderSystem::createBeeMesh(*beeMesh, "bee_shader");
+	}
 	
 	// Store references to the potentially re-used mesh objects
 	m_ParticleMesh = particleMesh;
 	m_ParticleMeshInstanced = particleMeshInstanced;
+	m_BeeMesh = beeMesh;
 }
 
 ParticleSystem* ParticleSystem::GetInstance()
@@ -69,6 +61,15 @@ ParticleSystem* ParticleSystem::GetInstance()
 		instance = new ParticleSystem(MAX_NUM_PARTICLES);
 	
 	return instance;
+}
+
+uint32_t ParticleSystem::NumBeesTargetingEntity(uint32_t entityID)
+{
+	uint32_t numBeestargetingEntity = 0;
+	for (BeeSwarm* swarm : m_BeeSwarms)
+		if (swarm->targetedPlayerEntityID == entityID)
+			numBeestargetingEntity++;
+	return numBeestargetingEntity;
 }
 
 void ParticleSystem::step(float elapsed_ms) 
@@ -93,15 +94,68 @@ void ParticleSystem::step(float elapsed_ms)
 		float lifeSpan = particle.lifeRemaining / particle.lifeTimeMs;
 		particle.currentColour = glm::lerp(particle.colourEnd, particle.colourBegin, lifeSpan);
 		particle.currentSize = glm::lerp(particle.sizeEnd, particle.sizeBegin, lifeSpan);
+
+		if (particle.affectedByWind)
+		{
+			// larger particles get blown away slower, smaller particles get blown faster
+			particle.velocity.x -= (1 / particle.currentSize) * WIND_MAGNITUDE;
+		}
 	}
+
+	for (BeeSwarm* swarm : m_BeeSwarms)
+	{
+		// Update the swarm position to be the player position if the swarm is chasing that player
+		if (swarm->isChasing)
+			swarm->position = swarm->scene->m_Registry.get<Motion>((entt::entity)swarm->targetedPlayerEntityID).position;
+		
+		for (Bee& bee : swarm->bees)
+		{
+			// Handle individual bee movement logic
+			updateBeeProperties(bee, swarm->position);
+		}
+	}
+}
+
+void ParticleSystem::updateBeeProperties(Bee& bee, glm::vec3 swarmPosition)
+{
+	// Recalculate offset from the center of the swarm
+	bee.offsetFromSwarmCenter = bee.position - swarmPosition;
+	// Update bee velocity in swarm-like fashion
+	// If a bee is too far from the center of the swarm, gently start nudging it back
+	if (glm::length(bee.offsetFromSwarmCenter) > 100.0f)
+		bee.velocity -= bee.offsetFromSwarmCenter / 10000.0f;
+	// If a bee is really far from the center of the swarm, send it flying back
+	if (glm::length(bee.offsetFromSwarmCenter) > 200.0f)
+	{
+		bee.velocity -= bee.offsetFromSwarmCenter / 2000.0f;
+		bee.velocity = bee.velocity + (glm::vec3((0.5f - Random::Float()), (0.5f - Random::Float()), (0.5f - Random::Float())));
+	}
+	// Slow down bees that are very close to the center and going very fast
+	// This is to stop the hive from oscillating back and forth
+	if (glm::length(bee.offsetFromSwarmCenter) < 200.0f && glm::length(bee.velocity) > 4.0f)
+		bee.velocity *= 0.95f;
+	// Slow down bees that are moving too fast
+	if (glm::length(bee.velocity) > 12.0f)
+		bee.velocity *= 0.9f;
+	// Update bee positions
+	bee.position += bee.velocity;
+	// Add some randomness to the bee's velocity
+	bee.velocity = bee.velocity + (glm::vec3(0.5f - Random::Float(), 0.5f - Random::Float(), 0.5f - Random::Float())) / 5.0f;
+	bee.velocity *= 0.995;
+
+	// Update bee rotations depending on movement pattern, with some randomness
+	bee.rotationX += bee.velocity.x * (0.5f - Random::Float()) / 2.0f;
+	bee.rotationY += bee.velocity.y * (0.5f - Random::Float()) / 2.0f;
+	bee.rotationZ += bee.velocity.z * (0.5f - Random::Float()) / 2.0f;
 }
 
 void ParticleSystem::Emit(const ParticleProperties& particleProps)
 {
 	Particle& particle = m_ParticlePool[m_PoolIndex];
 	particle.active = true;
+	particle.affectedByWind = particleProps.affectedByWind;
 	particle.position = particleProps.position;
-	particle.rotation = Random::Float() * 2.0f * glm::pi<float>();
+	particle.rotation = Random::Float() * 2.0f * PI;
 
 	// Velocity
 	particle.velocity = particleProps.velocity;
@@ -135,7 +189,8 @@ void ParticleSystem::grass_collision_listener(ECS_ENTT::Entity entity_i, ECS_ENT
 	{
 		Motion& grassMotionComponent = entity_j.GetComponent<Motion>();
 		Motion& slingBroMotionComponent = entity_i.GetComponent<Motion>();
-		slingBroMotionComponent.velocity *= 0.99;
+		if (WorldSystem::ActiveScene->m_Weather != WeatherTypes::Rain)
+			slingBroMotionComponent.velocity *= 0.99;
 
 		if (glm::length(slingBroMotionComponent.velocity) < 100.0f || grassMotionComponent.position.y >= slingBroMotionComponent.position.y + 20.0f)
 			return;
@@ -208,20 +263,19 @@ void ParticleSystem::dirt_collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT
 		glm::vec3 particleOffset = glm::vec3(0.0f);
 		glm::vec3 dirtVelocity = glm::vec3(1.0f);
 		float dirtSpeed = 0.1f;
-		float pi = 3.1415926535;
 		float offsetMagnitudeX = slingBroMotionComponent.scale.x / 2.0f;
 		float offsetMagnitudeY = slingBroMotionComponent.scale.y / 2.0f;
-		if (angle > -pi / 4 && angle <= pi / 4) // bro to the right of block
+		if (angle > -PI / 4 && angle <= PI / 4) // bro to the right of block
 		{
 			particleOffset = glm::vec3(-offsetMagnitudeX, 0.0f, 10.0f);
 			dirtVelocity = glm::vec3(dirtSpeed, 0.0f, 0.0f);
 		}
-		else if (angle > pi / 4 && angle <= 3 * pi / 4) // bro below block
+		else if (angle > PI / 4 && angle <= 3 * PI / 4) // bro below block
 		{
 			particleOffset = glm::vec3(0.0f, -offsetMagnitudeY, 10.0f);
 			dirtVelocity = glm::vec3(0.0f, dirtSpeed, 0.0f);
 		}
-		else if (angle > 3 * pi / 4 && angle <= 5 * pi / 4) // bro to the left of block
+		else if (angle > 3 * PI / 4 && angle <= 5 * PI / 4) // bro to the left of block
 		{
 			particleOffset = glm::vec3(offsetMagnitudeX, 0.0f, 10.0f);
 			dirtVelocity = glm::vec3(-dirtSpeed, 0.0f, 0.0f);
@@ -260,6 +314,47 @@ void ParticleSystem::dirt_collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT
 	}
 }
 
+// Collisions between bro and beehives - callback function, listening to PhysicsSystem::Collisions
+void ParticleSystem::beehive_collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, bool hit_wall)
+{
+	if (!entity_i.IsValid() || !entity_j.IsValid())
+		return;
+
+	if (entity_i.HasComponent<SlingBro>() && entity_j.HasComponent<BeeHiveEnemy>())
+	{
+		auto& slingBroEntity = entity_i;
+		auto& beeHiveEntity = entity_j;
+
+		// Make the bees chase the player who hit their hive
+		BeeHiveEnemy& beeHiveComponent = beeHiveEntity.GetComponent<BeeHiveEnemy>();
+		BeeSwarm* collidedHivesBeeSwarm = beeHiveComponent.hiveSwarm;
+		collidedHivesBeeSwarm->isChasing = true;
+		collidedHivesBeeSwarm->targetedPlayerEntityID = slingBroEntity.GetEntityID();
+
+		// Give points for collecting honey from the hive
+		Turn& turnComponent = slingBroEntity.GetComponent<Turn>();
+		if (!beeHiveComponent.HasBeenHarvestedByPlayer(slingBroEntity.GetEntityID()))
+		{
+			turnComponent.points += POINTS_GAINED_HARVESTING_HONEY;
+			beeHiveComponent.harvestedByPlayers.push_back(slingBroEntity.GetEntityID());
+
+			// Emit some honey gloop particles
+			ParticleProperties particle;
+			particle.position = beeHiveEntity.GetComponent<Motion>().position;
+			particle.velocity = glm::vec3(0.0f, -0.05f, 0.0f);;
+			particle.velocityVariation = glm::vec3(0.2f, 0.125f, 0.2f);
+			particle.colourBegin = glm::vec4(250.0f / 255.0f, 189.0f / 255.0f, 42.0f / 255.0f, 1.0f);
+			particle.colourEnd = glm::vec4(200.0f / 255.0f, 139.0f / 255.0f, 0.0f / 255.0f, 0.2f);
+			particle.sizeBegin = 20.0f;
+			particle.sizeEnd = 2.0f;
+			particle.sizeVariation = 2.0f;
+			particle.lifeTimeMs = 4000.0f;
+			for (int i = 0; i < 100; i++)
+				Emit(particle);
+		}
+	}
+}
+
 // Collisions between bro and lava tiles - callback function, listening to PhysicsSystem::Collisions
 void ParticleSystem::lava_block_collision_listener(ECS_ENTT::Entity entity_i, ECS_ENTT::Entity entity_j, bool hit_wall)
 {
@@ -281,21 +376,20 @@ void ParticleSystem::lava_block_collision_listener(ECS_ENTT::Entity entity_i, EC
 		float angle = atan(dispVec.y, dispVec.x); // angle in radians from lava block to slingbro
 		glm::vec3 particleOffset = glm::vec3(0.0f);
 		glm::vec3 sparkVelocity = glm::vec3(1.0f);
-		float pi = 3.1415926535;
 		float offsetMagnitudeX = slingBroMotionComponent.scale.x / 2.0f;
 		float offsetMagnitudeY = slingBroMotionComponent.scale.y / 2.0f;
 		float sparkSpeed = 0.1f;
-		if (angle > -pi / 4 && angle <= pi / 4) // bro to the right of lava block
+		if (angle > -PI / 4 && angle <= PI / 4) // bro to the right of lava block
 		{
 			particleOffset = glm::vec3(-offsetMagnitudeX, 0.0f, 10.0f);
 			sparkVelocity = glm::vec3(sparkSpeed, 0.0f, 0.0f);
 		}
-		else if (angle > pi / 4 && angle <= 3 * pi / 4) // bro below lava block
+		else if (angle > PI / 4 && angle <= 3 * PI / 4) // bro below lava block
 		{
 			particleOffset = glm::vec3(0.0f, -offsetMagnitudeY, 10.0f);
 			sparkVelocity = glm::vec3(0.0f, sparkSpeed, 0.0f);
 		}
-		else if (angle > 3 * pi / 4 && angle <= 5 * pi / 4) // bro to the left of lava block
+		else if (angle > 3 * PI / 4 && angle <= 5 * PI / 4) // bro to the left of lava block
 		{
 			particleOffset = glm::vec3(offsetMagnitudeX, 0.0f, 10.0f);
 			sparkVelocity = glm::vec3(-sparkSpeed, 0.0f, 0.0f);
@@ -349,7 +443,41 @@ void ParticleSystem::lava_block_collision_listener(ECS_ENTT::Entity entity_i, EC
 		for (int i = 0; i < 1; i++)
 			Emit(particle);
 	}
+}
 
+void ParticleSystem::weather_listener(ECS_ENTT::Scene* scene)
+{
+	ParticleProperties particle;
+
+	if (scene->m_Weather == WeatherTypes::Rain) {
+		// Emit rain particles
+		particle.position = {Random::Float() * (scene->m_Size.x + 100.f), .0, 0.0};
+		particle.velocity = glm::vec3(0.0f, 0.4f, 0.01f);
+		particle.velocityVariation = glm::vec3(0.0f, 0.2f, 0.0);
+		particle.colourBegin = glm::vec4(0.58f, 0.66f, 0.7f, 1.0f);
+		particle.colourEnd = glm::vec4(0.58f, 0.66f, 0.7f, 1.0f);
+		particle.sizeBegin = 7.0f;
+		particle.sizeEnd = 7.0f;
+		particle.sizeVariation = 1.0f;
+		particle.lifeTimeMs = scene->m_Size.y * 10.f;
+		particle.affectedByWind = true;
+
+		Emit(particle);
+	} else if (scene->m_Weather == WeatherTypes::Snow) {
+		// Emit snow particles
+		particle.position = {Random::Float() * (scene->m_Size.x + 100.f), .0, 0.0};
+		particle.velocity = glm::vec3(0.0f, 0.2f, 0.01f);
+		particle.velocityVariation = glm::vec3(0.0f, 0.2f, 0.0);
+		particle.colourBegin = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		particle.colourEnd = glm::vec4(0.9f, 0.9f, 0.92f, 0.8f);
+		particle.sizeBegin = 10.0f;
+		particle.sizeEnd = 10.0f;
+		particle.sizeVariation = 10.0f;
+		particle.lifeTimeMs = scene->m_Size.y * 10.f;
+		particle.affectedByWind = true;
+
+		Emit(particle);
+	}
 }
 
 void ParticleSystem::clearParticles()
@@ -362,6 +490,13 @@ void ParticleSystem::clearParticles()
 	}
 }
 
+void ParticleSystem::clearBeeSwarms()
+{
+	for (BeeSwarm* swarm : m_BeeSwarms)
+		swarm->bees.clear();
+	m_BeeSwarms.clear();
+}
+
 std::vector<Particle> ParticleSystem::GetActiveParticles() const
 {
 	std::vector<Particle> activeParticles;
@@ -369,4 +504,30 @@ std::vector<Particle> ParticleSystem::GetActiveParticles() const
 		if (particle.active)
 			activeParticles.push_back(particle);
 	return activeParticles;
+}
+
+BeeSwarm* ParticleSystem::CreateBeeSwarm(glm::vec3 swarmCenterPosition, unsigned int numberOfBees)
+{
+	BeeSwarm* swarm = new BeeSwarm(swarmCenterPosition, numberOfBees);
+	m_BeeSwarms.push_back(swarm);
+	return swarm;
+}
+
+BeeSwarm::BeeSwarm(glm::vec3 swarmCenterPosition, unsigned int numberOfBees)
+	: position(swarmCenterPosition), numBees(numberOfBees)
+{
+	// Initialize all the bees in the swarm with randomized starting positions, velocities, rotations
+	for (int i = 0; i < numBees; i++)
+	{
+		// Bee properties
+		glm::vec3 offsetFromSwarmCenter = glm::vec3(100.0f * (0.5f - Random::Float()), 100.0f * (0.5f - Random::Float()), 10.0f * (0.5f - Random::Float()));
+		glm::vec3 velocity = glm::vec3(0.5f - Random::Float(), 0.5f - Random::Float(), 0.5f - Random::Float());
+		float rotationX = Random::Float() * 2 * 3.14;
+		float rotationY = Random::Float() * 2 * 3.14;
+		float rotationZ = Random::Float() * 2 * 3.14;
+		float size = 8.0f + (8.0f*Random::Float());
+		glm::vec4 colour = glm::vec4(1.0f, 1.0f, 0.05f, 1.0f);
+		Bee bee = { swarmCenterPosition + offsetFromSwarmCenter, offsetFromSwarmCenter, velocity, rotationX, rotationY, rotationZ, size, colour };
+		bees.push_back(bee);
+	}
 }

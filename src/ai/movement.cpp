@@ -10,7 +10,7 @@ void Patrol::init(ECS_ENTT::Entity e)
 
 }
 
-BehaviorTree::State Patrol::process(ECS_ENTT::Entity e)
+BehaviorTree::State Patrol::process(ECS_ENTT::Entity e, float elapsed_ms)
 {
 	auto& motion = e.GetComponent<Motion>();
 
@@ -30,7 +30,7 @@ void SkyPatrol::init(ECS_ENTT::Entity e) {
 
 }
 
-BehaviorTree::State SkyPatrol::process(ECS_ENTT::Entity e) {
+BehaviorTree::State SkyPatrol::process(ECS_ENTT::Entity e, float elapsed_ms) {
 	auto& motion = e.GetComponent<Motion>();
 
 	if (--n == 0) {

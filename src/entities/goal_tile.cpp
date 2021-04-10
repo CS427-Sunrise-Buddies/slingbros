@@ -13,7 +13,7 @@ ECS_ENTT::Entity GoalTile::createGoalTile(vec3 position, ECS_ENTT::Scene* scene)
 
 	goalTileEntity.AddComponent<ShadedMeshRef>(resource);
 
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f };
 
 	Motion& motionComponent = goalTileEntity.AddComponent<Motion>();
 	motionComponent.position = position;

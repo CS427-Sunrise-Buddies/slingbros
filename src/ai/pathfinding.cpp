@@ -1,3 +1,7 @@
+#define _USE_MATH_DEFINES
+
+#include <cmath>
+
 #include <entities/goal_tile.hpp>
 #include <iostream>
 #include "pathfinding.hpp"
@@ -14,7 +18,6 @@ void MoveToGoal::init(ECS_ENTT::Entity e)
 	if (m_GoalReached) {
 		return;
 	}
-	m_IterationNum = 0;
 	// Perform BFS to find the shortest path to goal position
 
 	int rows = WorldSystem::GameScene->m_Map.size();
@@ -25,14 +28,14 @@ void MoveToGoal::init(ECS_ENTT::Entity e)
 	// init to all false
 	for (int i = 0; i < rows; i++)
 		for (int j = 0; j < cols; j++)
-			visited[i*cols+j] = false;
+			visited[i * cols + j] = false;
 
 	// first node in BFS will be this AI entity's position
 	vec2 root = e.GetComponent<Motion>().position;
 	std::queue<vec2> root_path;
 	root_path.emplace(root);
 
-	visited[(int)(root.y / SPRITE_SCALE) * cols + (int)(root.x / SPRITE_SCALE)] = true;
+	visited[(int) (root.y / SPRITE_SCALE) * cols + (int) (root.x / SPRITE_SCALE)] = true;
 
 	std::queue<std::queue<vec2>> pathQueue;
 	pathQueue.emplace(root_path);
@@ -46,17 +49,15 @@ void MoveToGoal::init(ECS_ENTT::Entity e)
 
 		std::string test_e = WorldSystem::GameScene->m_Map[(int) nodePositionIndices.y][(int) nodePositionIndices.x];
 
-		if (test_e != EMPTY_CELL) {
-			if (isGoalTile(test_e)) {
-				m_Path = test_path;
-				m_GoalReached = true;
-				delete[] visited;
-				return;
-			}
-			// if we run into a ground tile or grass tile do not bother expanding this path further
-			if (isTile(test_e)) {
-				continue;
-			}
+		if (isGoalTile(test_e)) {
+			m_Path = test_path;
+			m_GoalReached = true;
+			delete[] visited;
+			return;
+		}
+		// if we run into a tile or if there is no ground around this space, stop exploring this path
+		if (isTile(test_e) || isFloating(nodePositionIndices.y, nodePositionIndices.x)) {
+			continue;
 		}
 
 		for (vec2 direction : BFS_DIRECTIONS) {
@@ -64,8 +65,7 @@ void MoveToGoal::init(ECS_ENTT::Entity e)
 							 nodePosition.y + (direction.y * SPRITE_SCALE)};
 			vec2 new_node_indices = nodePositionIndices + direction;
 
-			if (new_node_indices.y >= rows || new_node_indices.x >= cols || new_node_indices.y < 0 ||
-				new_node_indices.x < 0) {
+			if (outOfMapRange(new_node_indices.y, new_node_indices.x)) {
 				continue;
 			}
 
@@ -81,22 +81,38 @@ void MoveToGoal::init(ECS_ENTT::Entity e)
 	delete[] visited;
 }
 
-BehaviorTree::State MoveToGoal::process(ECS_ENTT::Entity e)
+BehaviorTree::State MoveToGoal::process(ECS_ENTT::Entity e, float elapsed_ms)
 {
-	auto& motion = e.GetComponent<Motion>();
-
-	m_IterationNum++;
-	if (m_IterationNum <= MOVEMENT_DELAY) {
-		return BehaviorTree::State::Running;
-	}
-	m_IterationNum = 0;
 	if (m_Path.empty()) {
 		return BehaviorTree::State::Successful;
 	}
 
-	// TODO: smoother movement along goal path instead of directly updating position
-	motion.position = vec3(m_Path.front(), motion.position.z);
-	m_Path.pop();
+	// Get the source and destination positions
+	auto& motion = e.GetComponent<Motion>();
+	auto position = motion.position;
+	auto source = vec2(position);      // Initial x,y position of the AI
+	auto destination = m_Path.front(); // x,y position of the next tile to move towards
+
+	// Already at destination
+	if (source.x == destination.x && source.y == destination.y) {
+		// Finished moving to target tile so remove from path
+		m_Path.pop();
+		destination = m_Path.front();
+
+		// Set the next intermediate target destination
+		auto& ai = e.GetComponent<AI>();
+		ai.target = destination;
+	}
+
+	// Compute the direction of travel
+	auto direction = normalize(destination - source);
+
+	// Rotate the AI
+	motion.angle = M_PI_2 * direction.y;
+
+	// Travel in the intended direction
+	motion.velocity = vec3(direction * AI_SPEED, motion.velocity.z);
+
 	return BehaviorTree::State::Running;
 }
 
@@ -107,5 +123,32 @@ bool MoveToGoal::isGoalTile(std::string s)
 
 bool MoveToGoal::isTile(std::string s)
 {
-	return s == T2 || s == T3;
+	return s == T2 || s == T3 || s == T4 || s == T6 || s == T7 || s == H0 || s == H1;
+}
+
+bool MoveToGoal::isFloating(int y, int x)
+{
+	for (vec2 direction : BFS_DIRECTIONS) {
+		int test_y = y + (int) direction.y;
+		int test_x = x + (int) direction.x;
+
+		if (outOfMapRange(test_y, test_x)) {
+			continue;
+		}
+
+		std::string test_e = WorldSystem::GameScene->m_Map[test_y][test_x];
+		// if there is a ground based tile around this position, the snail has a way to traverse to it
+		if (isTile(test_e)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool MoveToGoal::outOfMapRange(int y, int x)
+{
+	int rows = WorldSystem::GameScene->m_Map.size();
+	int cols = WorldSystem::GameScene->m_Map[0].size();
+
+	return y >= rows || x >= cols || y < 0 || x < 0;
 }

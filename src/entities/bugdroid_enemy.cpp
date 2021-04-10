@@ -17,7 +17,7 @@ ECS_ENTT::Entity BugDroidEnemy::createBugDroidEnemy(vec3 position, ECS_ENTT::Sce
 
 	bugDroidEnemyEntity.AddComponent<ShadedMeshRef>(resource);
 
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = bugDroidEnemyEntity.AddComponent<Motion>();
 	motionComponent.position = position;
@@ -32,6 +32,7 @@ ECS_ENTT::Entity BugDroidEnemy::createBugDroidEnemy(vec3 position, ECS_ENTT::Sce
 	aiComponent.behavior_tree = root;
 
 	bugDroidEnemyEntity.AddComponent<BugDroidEnemy>();
+	bugDroidEnemyEntity.AddComponent<CollidableEnemy>();
 
 	return bugDroidEnemyEntity;
 }

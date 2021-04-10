@@ -11,7 +11,7 @@ ECS_ENTT::Entity HazardTileSpike::createHazardTileSpike(vec3 position, ECS_ENTT:
 	ECS_ENTT::Entity hazardTileSpikeEntity = scene->CreateEntity("Hazard Tile Spike");
 	hazardTileSpikeEntity.AddComponent<ShadedMeshRef>(meshResource);
 	ShadedMeshRef& resource = hazardTileSpikeEntity.GetComponent<ShadedMeshRef>();
-	resource.reference_to_cache->texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.reference_to_cache->texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = hazardTileSpikeEntity.AddComponent<Motion>();
 	motionComponent.position = position;

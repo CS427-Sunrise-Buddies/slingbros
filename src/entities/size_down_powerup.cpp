@@ -14,7 +14,7 @@ ECS_ENTT::Entity SizeDownPowerUp::createSizeDownPowerUp(vec3 position, ECS_ENTT:
 
 	sizeDownPowerUpEntity.AddComponent<ShadedMeshRef>(resource);
 
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = sizeDownPowerUpEntity.AddComponent<Motion>();
 	motionComponent.position = position;

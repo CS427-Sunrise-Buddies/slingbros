@@ -18,7 +18,7 @@ ECS_ENTT::Entity Projectile::createProjectile(vec3 position, ECS_ENTT::Scene *sc
 	projectileEntity.AddComponent<ShadedMeshRef>(resource);
 
 	// Reset the projectile colour when created
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	// Setting initial motion values
 	auto& motionComponent = projectileEntity.AddComponent<Motion>();

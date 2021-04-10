@@ -1,15 +1,16 @@
-name: Tutorial2
+name: Sudden Encounter!
 background: cloudy_parallax_background.png
-background_music: happy_intro_music.wav
+background_music: bgm_happy.wav
+weather: sunny
 map: |
   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- H0 -- -- -- -- H0 -- -- -- -- -- --
   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- T1 --
   -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-  -- T0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-  T5 T5 T5 E1 T5 T5 T3 -- -- E4 -- T3 T5 T5 T5 T5 T5 T5
-  T3 T3 T3 T3 T3 T3 T2 T3 T3 T3 T3 T2 T3 T3 T3 T3 T3 T3
+  -- T0 -- -- -- -- -- -- -- -- -- -- -- -- -- -- T1 --
+  T5 T5 T5 E1 T5 -- T3 -- -- E4 -- T3 -- T5 T5 T5 T5 T5
+  T3 T3 T3 T3 T3 H1 T2 T3 T3 T3 T3 T2 H1 T3 T3 T3 T3 T3
   T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
   T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
 dialogue_boxes:

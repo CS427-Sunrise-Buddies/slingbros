@@ -34,15 +34,72 @@ git submodule update
 
 
 ## Credits:
+
 Music:
+
+[https://freesound.org/people/Setuniman/sounds/170914/](https://freesound.org/people/Setuniman/sounds/170914/)
+
+- bgm_happy.wav
+
+[https://freesound.org/people/yummie/sounds/410574/](https://freesound.org/people/yummie/sounds/410574/)
+
+- bgm_cool.wav
+
+[https://freesound.org/people/Migfus20/sounds/560738/](https://freesound.org/people/Migfus20/sounds/560738/)
+
+- bgm_future.wav
+
+[https://freesound.org/people/Migfus20/sounds/567112/](https://freesound.org/people/Migfus20/sounds/567112/)
+
+- bgm_relax.wav
+
+[https://freesound.org/people/GoodByte/sounds/442911/](https://freesound.org/people/GoodByte/sounds/442911/)
+
+- bgm_town.wav
+
+[https://freesound.org/people/anechoix/sounds/456797/](https://freesound.org/people/anechoix/sounds/456797/)
+
+- bgm_jazz.wav
+
+[https://freesound.org/people/Michael-DB/sounds/489035/](https://freesound.org/people/Michael-DB/sounds/489035/)
+
+- bgm_simple.wav
+
+[https://freesound.org/people/Migfus20/sounds/560454/](https://freesound.org/people/Migfus20/sounds/560454/)
+
+- bgm_epic.wav
+
+[https://freesound.org/people/Migfus20/sounds/560444/](https://freesound.org/people/Migfus20/sounds/560444/)
+
+- bgm_mystery.wav
+
+[https://freesound.org/people/Migfus20/sounds/560437/](https://freesound.org/people/Migfus20/sounds/560437/)
+
+- bgm_panic.wav
+
+[https://freesound.org/people/Migfus20/sounds/559847/](https://freesound.org/people/Migfus20/sounds/559847/)
+
+- bgm_guitar.wav
+
+[https://freesound.org/people/Migfus20/sounds/561390/](https://freesound.org/people/Migfus20/sounds/561390/)
+
+- bgm_tiptoe.wav
+
+[https://freesound.org/people/Migfus20/sounds/561388/](https://freesound.org/people/Migfus20/sounds/561388/)
+
+- bgm_trouble.wav
+
+[https://freesound.org/people/Migfus20/sounds/560443/](https://freesound.org/people/Migfus20/sounds/560443/)
+
+- bgm_rock.wav
+
+[https://freesound.org/people/FunWithSound/sounds/456968/](https://freesound.org/people/FunWithSound/sounds/456968/)
+
+- game_win.wav
 
 [https://freesound.org/people/Topschool/sounds/443493/](https://freesound.org/people/Topschool/sounds/443493/)
 
 - happy-noises.wav
-
-[https://freesound.org/people/Setuniman/sounds/170914/](https://freesound.org/people/Setuniman/sounds/170914/)
-
-- happy_intro_music.wav
 
 [https://freesound.org/people/bolkmar/sounds/442327/](https://freesound.org/people/bolkmar/sounds/442327/)
 
@@ -79,3 +136,7 @@ Music:
 [https://freesound.org/people/FoolBoyMedia/sounds/259174/](https://freesound.org/people/FoolBoyMedia/sounds/259174/)
 
 - squeak.wav
+
+[https://freesound.org/people/philRacoIndie/sounds/551543/](https://freesound.org/people/philRacoIndie/sounds/551543/)
+
+- disable_click.wav

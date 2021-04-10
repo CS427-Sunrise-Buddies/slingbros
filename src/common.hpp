@@ -21,22 +21,28 @@
 
 using namespace glm;
 
+// Size of all entities
+static const unsigned int SPRITE_SCALE = 100;
+
 // Note, here the window will show a width x height part of the game world, measured in px.
 // You could also define a window to show 1.5 x 1 part of your game world, where the aspect ratio depends on your window size.
 const ivec2 WINDOW_SIZE_IN_PX		 = { 1200, 800 };
 const vec2 WINDOW_SIZE_IN_GAME_UNITS = { 1200, 800 };
 
 // Multiplayer constants
-const unsigned int MIN_NUM_PLAYERS = 1;  // Minimum number of players in the game
-const unsigned int MAX_NUM_PLAYERS = 2;  // Maximum number of players in the game
+const size_t NUM_PLAYERS_1 = 1; // Minimum number of players in the game is 1
+const size_t NUM_PLAYERS_2 = 2; // Maximum number of players in the game is 2
 
 // Turn constants
 const float END_TURN_COUNTDOWN = 1000.f; // Duration to wait for player movement to end turn
 const float END_TURN_VELOCITY_X = 20.f;  // Velocity in x-direction above which to reset end turn countdown
-const float END_TURN_VELOCITY_Y = 200.f;  // Velocity in y-direction above which to reset end turn countdown
-const float AI_TURN_COUNTDOWN = 3000.f; // Duration to wait for AI movement to end turn
-
+const float END_TURN_VELOCITY_Y = 200.f; // Velocity in y-direction above which to reset end turn countdown
+const float AI_TURN_COUNTDOWN = 3 * END_TURN_COUNTDOWN; // Duration to wait for AI movement to end turn
+const float AI_ACTION_COUNTDOWN = 500.f; // Duration to wait for AI process
+const float AI_SPEED = 70.f; // Default speed of AI entities
+const float PROJECTED_PATH_FADE_COUNTDOWN = 2000.f; // fading cycle of the projected path
 // Camera constants
+const vec3 MENU_CAMERA_POSITION = glm::vec3(WINDOW_SIZE_IN_PX / 2, 690);
 const float GAME_CAMERA_PERSPECTIVE_FAR_BOUND = 4000.0f;
 const float MENU_CAMERA_PERSPECTIVE_FAR_BOUND = 2000.0f;
 const float MAX_CAMERA_Z_POSITION = 2000.0f;
@@ -45,6 +51,7 @@ const float MIN_CAMERA_Z_POSITION = -900.0f;
 // Particle system constants
 const unsigned int MAX_NUM_PARTICLES = 4000;
 const float DEFAULT_PARTICLE_LIFETIME_MS = 10000.0f;
+const int NUM_BEES_PER_SWARM = 140;
 
 // Spritesheet constants
 const uint SPRITE_PIXEL_WIDTH = 32;
@@ -52,12 +59,32 @@ const uint SPRITE_PIXEL_HEIGHT = 32;
 const uint SPRITESHEET_PIXEL_WIDTH = 512;
 const uint SPRITESHEET_PIXEL_HEIGHT = 1024;
 
-// Size of all entities
-static const unsigned int SPRITE_SCALE = 100;
-
 // Physics constants
 const float HORIZONTAL_FRICTION_MAGNITUDE = 0.6;
 const float VELOCITY_BOUNCE_MULTIPLIER = -0.7;
+const float PI = 3.14159265359;
+
+ // Game balancing constants
+const int POINTS_LOST_PER_TURN_PER_BEE_SWARM = 7;
+const int POINTS_GAINED_HARVESTING_HONEY = 30;
+const int POINTS_GAINED_COIN_VALUE = 10;
+const int POINTS_GAINED_ON_WIN = 50;
+const int POINTS_LOST_UPON_SPIKE_COLLISION = 5;
+const int POINTS_LOST_UPON_ENEMY_COLLISION = 5;
+const int MAX_POINTS_LOST_PER_TURN = 50;
+const int POINTS_LOST_BASIC_PROJECTILE = 1;
+const int POINTS_LOST_HELGE_PROJECTILE = 10;
+const float BASIC_PROJECTILE_MASS = 0.02f;
+const float HELGE_PROJECTILE_MASS = 5.0f;
+const float MAX_PROJECTILE_KNOCKBACK_VELOCITY = 400.0f;
+const float PROJECTILE_AIM_RANDOMNESS_FACTOR = 60.0f;
+const float HELGE_PROJECTILE_LIFETIME_MS = 150000.0f;
+const float BASIC_PROJECTILE_LIFETIME_MS = 60000.0f;
+
+const float RAIN_HORIZONTAL_FRICTION_MAGNITUDE = 0.3;
+
+// Audio system constant
+const float AUDIO_TRIGGER_VELOCITY_Y = 200.f;
 
 // Simple utility functions to avoid mistyping directory name
 inline std::string data_path() { return "data"; };
@@ -74,6 +101,10 @@ inline std::string config_path(const std::string& name) { return data_path() + "
 // Append extension to the end of the given file name
 inline std::string yaml_file(const std::string& name) { return name + ".yaml"; };
 inline std::string png_file(const std::string& name) { return name + ".png"; };
+
+struct Util {
+	static bool file_exists(const std::string& file_path);
+};
 
 // The 'Transform' component handles transformations passed to the Vertex shader
 // (similar to the gl Immediate mode equivalent, e.g., glTranslate()...)
@@ -95,7 +126,9 @@ struct Motion {
 
 // AI component that stores the behavior tree for an entity
 struct AI {
-	BehaviorTree::Node* behavior_tree = NULL;
+	BehaviorTree::Node* behavior_tree = nullptr;
+	float countdown = AI_ACTION_COUNTDOWN;
+	std::optional<vec2> target = std::nullopt;
 };
 
 struct SlingMotion {
@@ -124,9 +157,16 @@ struct Hazard
 	vec3 position = vec3(0, 0, 0);
 };
 
+// Indicates that an entity is affected by gravity
 struct Gravity
 {
 	float gravitational_constant = 1000.0f;
+};
+
+// Indicates that an entity has mass
+struct Mass
+{
+	float value = 1.f;
 };
 
 // Component to make certain Text entities clickable
@@ -159,11 +199,47 @@ struct Turn {
 
 	// Points (e.g. Colliding with projectiles decreases player score)
 	int points = 0;
+	int pointsLostThisTurn = 0;
 
 	// Duration to wait to ensure player movement has sufficiently settled down
 	float countdown = END_TURN_COUNTDOWN;
+
+	float path_fade_ms = PROJECTED_PATH_FADE_COUNTDOWN;
+
+	vec2 mouse_pos;
+
+	void addPoints(int newPoints) {
+		points += newPoints;
+	}
+
+	void subPoints(int subPoints) {
+		if(pointsLostThisTurn < MAX_POINTS_LOST_PER_TURN)
+			subPoints <= points ? points -= subPoints : points = 0;
+		pointsLostThisTurn += subPoints;
+	}
 };
 
 struct SizeChanged {
 	int turnsRemaining = 0;
 };
+
+struct MassChanged {
+	int turnsRemaining = 0;
+};
+
+// Value corresponds to spritesheet offset
+enum BroType {
+	ORANGE = 0,
+	PINK = 2,
+};
+
+struct PlayerProfile {
+	std::string playerName;
+	BroType broType;
+};
+
+struct CollidableEnemy
+{
+	uint32_t placeholder = 0;
+};
+

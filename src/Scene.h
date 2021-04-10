@@ -5,6 +5,7 @@
 #include "entt.hpp"
 #include "Camera.h"
 #include <queue>
+#include "weather.hpp"
 
 #include <glm/vec2.hpp>
 
@@ -34,6 +35,10 @@ namespace ECS_ENTT
 
 		void SetPlayer(unsigned int index);
 
+		size_t GetNumPlayers();
+
+		void SetNumPlayer(size_t n);
+
 		Camera* GetCamera() const { return m_Camera; }
 
 		void PointCamera(glm::vec3 position);
@@ -43,6 +48,10 @@ namespace ECS_ENTT
 		void PopDialogueBoxNames();
 		
 	public:
+		// Unique identifier of the scene
+		// Should just be the name of the level file it corresponds to
+		std::string m_Id;
+
 		// Name of the scene
 		std::string m_Name;
 
@@ -60,6 +69,9 @@ namespace ECS_ENTT
 
 		// Index of current player
 		unsigned int m_Player = 0;
+
+		// Number of players
+		size_t m_NumPlayers = 0;
 		
 		// File names of Dialogue boxes
 		std::queue<std::string> dialogue_box_names;
@@ -75,6 +87,8 @@ namespace ECS_ENTT
 
 		// Name of the background music used for this scene
 		std::string m_BackgroundMusicFileName;
+
+		WeatherTypes m_Weather;
 
 	private:
 		friend class Entity;

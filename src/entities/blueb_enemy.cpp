@@ -17,7 +17,7 @@ ECS_ENTT::Entity BluebEnemy::createBluebEnemy(vec3 position, ECS_ENTT::Scene* sc
 
 	bluebEnemyEntity.AddComponent<ShadedMeshRef>(resource);
 
-	resource.texture.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	resource.texture.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f};
 
 	Motion& motionComponent = bluebEnemyEntity.AddComponent<Motion>();
 	motionComponent.position = position;
@@ -33,6 +33,7 @@ ECS_ENTT::Entity BluebEnemy::createBluebEnemy(vec3 position, ECS_ENTT::Scene* sc
 	aiComponent.behavior_tree = root;
 
 	bluebEnemyEntity.AddComponent<BluebEnemy>();
+	bluebEnemyEntity.AddComponent<CollidableEnemy>();
 
 	return bluebEnemyEntity;
 }

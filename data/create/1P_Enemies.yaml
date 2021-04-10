@@ -1,0 +1,22 @@
+name: Sudden Encounter!
+background: cloudy_parallax_background.png
+background_music: bgm_panic.wav
+weather: sunny
+map: |
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- H0 -- -- -- -- -- -- H0 -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- P3 P3 -- -- -- -- -- -- -- T1 T3
+  -- -- -- -- -- -- -- -- P3 P3 P3 P3 -- -- -- -- -- -- -- T2
+  -- T0 -- -- -- -- T5 T5 -- -- -- -- T5 T5 -- -- -- -- -- T2
+  T5 T5 T5 E1 T5 T5 T3 T3 -- -- E0 -- T3 T3 T5 T5 T5 T5 T5 T2
+  T3 T3 T3 T3 T3 T3 T2 T2 T3 T3 T3 T3 T2 T2 T3 T3 T3 T3 T3 T2
+  T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+  T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+dialogue_boxes:
+   - 1P_Enemies/1P_enemies_dialogue_0.png
+   - 1P_Enemies/1P_enemies_dialogue_1.png

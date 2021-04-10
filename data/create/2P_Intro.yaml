@@ -1,0 +1,30 @@
+name: The Origin
+background: cloudy_parallax_background.png
+background_music: bgm_town.wav
+weather: sunny
+map: |
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- -- -- -- -- P3 -- -- -- -- -- P3 -- -- -- -- -- --
+  -- -- -- -- -- H0 -- -- -- -- -- H0 -- -- -- -- T1 --
+  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+  -- T0 -- -- -- -- -- -- P3 P3 -- -- -- P3 P3 -- -- --
+  T5 T5 T5 T5 T5 T5 T5 T5 -- -- T5 T5 T5 -- -- T5 T5 T5
+  T3 T3 T3 T3 T3 T3 T3 T3 H1 H1 T3 T3 T3 H1 H1 T3 T3 T3
+  T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+  T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2 T2
+dialogue_boxes:
+   - 2P_Intro/2P_intro_narration_0.png
+   - 2P_Intro/2P_intro_narration_1.png
+   - 2P_Intro/2P_intro_narration_2.png
+   - 2P_Intro/2P_intro_narration_3.png
+   - 2P_Intro/2P_intro_dialogue_0.png
+   - 2P_Intro/2P_intro_dialogue_1.png
+   - 2P_Intro/2P_intro_dialogue_2.png
+   - 2P_Intro/2P_intro_dialogue_3.png
+   - 2P_Intro/2P_intro_dialogue_4.png
+   - 2P_Intro/2P_intro_dialogue_5.png
+   - 2P_Intro/2P_intro_narration_4.png
