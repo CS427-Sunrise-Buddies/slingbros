@@ -1,6 +1,6 @@
 id: 1P_FinalLevel
 name: The Final Level
-background: cloudy_parallax_background.png
+background: red_cloudy_parallax_background.png
 weather: sunny
 background_music: bgm_epic.wav
 player: 0
